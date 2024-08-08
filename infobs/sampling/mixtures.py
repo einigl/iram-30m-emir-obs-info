@@ -23,7 +23,7 @@ class Mixture(Sampler):
         assert len(samplers) == len(weights)
 
         if not isinstance(weights, np.ndarray):
-            weights = np.ndarray(weights)
+            weights = np.array(weights)
         self.p = weights / weights.sum()
 
     def get(self, n: int) -> np.ndarray:
@@ -31,6 +31,6 @@ class Mixture(Sampler):
             sampler.get(n) for sampler in self.samplers
         ])
         idx = np.random.choice(
-            np.arange(self.weights.size), size=n, p=self.p
+            np.arange(self.p.size), size=n, p=self.p
         )
         return samples[np.arange(n), idx]

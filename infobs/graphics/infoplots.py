@@ -8,7 +8,7 @@ from matplotlib.axes import Axes
 from matplotlib.patches import Rectangle
 from matplotlib.colors import to_rgba
 
-from .util import truncate_colormap, expformat
+from ._util import truncate_colormap, expformat
 
 __all__ = [
     "Plotter"
