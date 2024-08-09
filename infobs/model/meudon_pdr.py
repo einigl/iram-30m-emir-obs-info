@@ -1,5 +1,5 @@
 import os
-from typing import Optional, List, Dict
+from typing import Optional, Tuple, List, Dict
 
 import numpy as np
 import pandas as pd
@@ -7,7 +7,7 @@ import pandas as pd
 from nnbma import NeuralNetwork
 
 from ..sampling.samplers import Sampler, Constant
-from ..util import erg_to_kelvin
+from ..util import radm_to_g0, g0_to_radm, erg_to_kelvin
 
 
 __all__ = [
@@ -17,6 +17,12 @@ __all__ = [
 class MeudonPDR:
 
     parameters: List[str] = ["Av", "G0", "Pth", "angle", "kappa"]
+    bounds: Dict[str, Tuple[float, float]] = {
+        "Av": (1, 40),
+        "G0": (radm_to_g0(1e0), radm_to_g0(1e5)),
+        "Pth": (1e5, 1e9),
+        "angle": (0, 60)
+    }
 
     def __init__(
         self,
@@ -80,8 +86,7 @@ class MeudonPDR:
 
         # Conversion from G0 to radm
 
-        conv_fact = 1.2786 / 2  # G0 = 1.2786 * radm / 2
-        df_params_net["radm"] = df_params_net["radm"] / conv_fact
+        df_params_net["radm"] = g0_to_radm(df_params_net["radm"])
 
         # Reorder inputs
 

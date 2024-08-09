@@ -1,10 +1,30 @@
 from typing import Optional, Union
 
 __all__ = [
+    "radm_to_g0",
+    "g0_to_radm",
     "erg_to_kelvin",
     "kelvin_to_erg",
     "integrate_noise"
 ]
+
+def radm_to_g0(
+    radm: float
+) -> float:
+    """
+    TODO
+    """
+    conv_fact = 1.2786 / 2  # G0 = 1.2786 * radm / 2
+    return radm * conv_fact
+
+def g0_to_radm(
+    g0: float
+) -> float:
+    """
+    TODO
+    """
+    conv_fact = 1.2786 / 2  # G0 = 1.2786 * radm / 2
+    return g0 / conv_fact
 
 def kelvin_to_erg(
     I: float,

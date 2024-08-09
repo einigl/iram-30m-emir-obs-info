@@ -11,11 +11,11 @@ from matplotlib.colors import to_rgba
 from ._util import truncate_colormap, expformat
 
 __all__ = [
-    "Plotter"
+    "InfoPlotter"
 ]
 
 
-class Plotter():
+class InfoPlotter():
 
     line_formatter: Callable
     param_formatter: Callable
