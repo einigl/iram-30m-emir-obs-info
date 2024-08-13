@@ -15,15 +15,18 @@ Settings.only_rotational = True
 plt.rc("text", usetex=True)
 
 def _load_noise_profile(
-    obstime: float
+    obstime: float,
+    ipwv: int
 ):
     """
     Obstime in seconds
     """
-    data = np.load(
-        os.path.join(os.path.dirname(__file__), "rms_profile.npz")
+    f_array = np.load(
+        os.path.join(os.path.dirname(__file__), "frequencies.npy")
     )
-    f_array, n_array = data["freq"], data["rms"] # Reference RMS for an integration of 1 min
+    n_array = np.load(
+        os.path.join(os.path.dirname(__file__), f"rms_profile_ipwv_{ipwv}mm.npy")
+    )
 
     n_array = n_array / np.sqrt(obstime / 60)
 
@@ -32,6 +35,7 @@ def _load_noise_profile(
 def plot_all_bands(
     freqs: np.ndarray,
     obstime: Optional[float],
+    ipwv: int
 ):
     rms_min = 0 # mK
     rms_max = 800 # mK
@@ -56,7 +60,7 @@ def plot_all_bands(
             color="red", weight='bold', bbox=props
         )
 
-    f_array, n_array = _load_noise_profile(obstime or 60)
+    f_array, n_array = _load_noise_profile(obstime or 60, ipwv)
     mask = (lowest <= f_array) & (f_array <= highest)
 
     if obstime is not None:
@@ -75,6 +79,7 @@ def plot_specific_band(
     freqs: np.ndarray,
     lines: List[str],
     obstime: Optional[float],
+    ipwv: int,
     short: bool
 ):
 
@@ -85,7 +90,7 @@ def plot_specific_band(
 
     low, upp = iram30m_emir.IRAM30mEMIR.bands()[band]
 
-    f_array, n_array = _load_noise_profile(obstime or 60)
+    f_array, n_array = _load_noise_profile(obstime or 60, ipwv)
     mask = (low <= f_array) & (f_array <= upp)
 
     rms_min = 1e3*np.min(n_array[mask]) # mK

@@ -1,7 +1,6 @@
 import os
-from typing import Union, List, Dict, Literal, Optional
+from typing import List, Dict, Literal, Optional
 
-import numpy as np
 import pandas as pd
 
 from ..instrument import StandardInstrument
@@ -18,14 +17,23 @@ class IRAM30mEMIR(StandardInstrument):
     def __init__(
         self,
         linewidth: float,
-        kelvin: bool=True
+        kelvin: bool=True,
+        ipwv: Literal[0, 1, 2]=1
     ):
         """
-        Reference velocity channels : 0.5 km/s.
+        Reference velocity channels : 0.5 km/s
+        Integrated precipitable water vapor [mm]
         Linewidth [km/s]
         """
+        ipwv = int(ipwv)
+        assert ipwv in [0, 1, 2]
+        self.ipwv = ipwv
 
-        self.emir_df = IRAM30mEMIR._get_table()
+        self.emir_df = IRAM30mEMIR._get_table()[
+            ["EMIR band", "freq", "Calibration error (%)", f"Noise RMS (K) [1 min, IPWV={ipwv}mm]"]
+        ].rename(columns={
+            f"Noise RMS (K) [1 min, IPWV={ipwv}mm]": "Noise RMS (K) [1 min]"
+        })
         lines = self.emir_df.index.to_list()
 
         super().__init__(
@@ -75,8 +83,8 @@ class IRAM30mEMIR(StandardInstrument):
             "0.9mm": [277, 375] # [277, 350]
         }
     
-    @staticmethod
     def plot_band(
+        self,
         band: Literal["3mm", "2mm", "1mm", "0.9mm", "all"],
         lines: List[str],
         obstime: Optional[float]=None,
@@ -97,8 +105,8 @@ class IRAM30mEMIR(StandardInstrument):
         lines = [latex.remove_hyperfine(l) for l in lines]
 
         if band == "all":
-            return _display.plot_all_bands(freqs, obstime)
-        return _display.plot_specific_band(band, freqs, lines, obstime, short)
+            return _display.plot_all_bands(freqs, obstime, self.ipwv)
+        return _display.plot_specific_band(band, freqs, lines, obstime, self.ipwv, short)
     
     def __str__(self):
         return "IRAM 30m EMIR"

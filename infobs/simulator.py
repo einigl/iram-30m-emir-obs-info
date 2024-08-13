@@ -7,12 +7,9 @@ from .model import MeudonPDR
 from .instruments import Instrument
 from .sampling import Sampler, Constant
 
-import infovar
-
 
 __all__ = [
-    "Simulator",
-    "PDRGetter"
+    "Simulator"
 ]
 
 class Simulator:
@@ -78,42 +75,3 @@ class Simulator:
             df,
             obstime
         )
-
-
-class PDRGetter(infovar.StandardGetter):
-    """
-    TODO
-    """
-
-    def __init__(
-        self,
-        instrument: Instrument,
-        n_samples: int,
-        samplers: List[Sampler],
-        obs_time: Union[float, List[float]],
-        noise: bool=True,
-        kappa: Sampler=Constant(1.),
-        seed: Optional[int]=None
-    ):
-        
-        # Simulator
-        self.simulator = Simulator(
-            instrument
-        )
-
-        # Load and preprocess data
-        df = self.simulator.simulate(
-            n_samples,
-            samplers,
-            instrument.lines,
-            obs_time,
-            noise=noise,
-            kappa=kappa,
-            seed=seed
-        )
-
-        # Attributes
-        self.x_names = MeudonPDR.parameters
-        self.y_names = instrument.lines
-        self.x = df.loc[:, self.x_names].values
-        self.y = df.loc[:, self.y_names].values

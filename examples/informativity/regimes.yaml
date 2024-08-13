@@ -1,0 +1,14 @@
+all:
+  Av: [null, null]
+
+diffuse:
+  Av: [null, 3]
+
+translucent:
+  Av: [3, 6]
+
+filamentary:
+  Av: [6, 12]
+
+dense:
+  Av: [12, null]
