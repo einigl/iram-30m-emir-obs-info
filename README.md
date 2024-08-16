@@ -1,6 +1,6 @@
 # IRAM 30-meter EMIR observations informativity
 
-This package implements tools to quantitatively estimate the usefulness of spectral line observations for estimating physical conditions. 
+This package implements tools to quantitatively estimate the usefulness of spectral line observations for estimating physical conditions.
 It provides a tool for simply reproducing observations made at IRAM 30-meter millimeter-wave telescope coupled with the EMIR receiver. Other instruments can also be simulated.
 
 Line intensity predictions are made using a neural network emulation of the Meudon PDR code.
@@ -12,15 +12,23 @@ This emulator enables a thousand predictions to be made in around 10 ms on a lap
 
 ## Get started
 
-**TODO**
+To get started, check out the jupyter notebooks presented in the `examples` folder.
+
+## Tests
+
+To test, run:
+
+```shell
+pytest && coverage-badge -o coverage.svg
+```
 
 ## Associated packages
 
-**A&A paper repository**: Reproduce the results in Einig et al. (2024) (https://github.com/einigl/informative-obs-paper)
+[**A&A paper repository**](https://github.com/einigl/informative-obs-paper): Reproduce the results in Einig et al. (2024)
 
-**InfoVar**: Estimating informativity of features (https://github.com/einigl/infovar).
+[**InfoVar**](<https://github.com/einigl/infovar>): Estimating informativity of features.
 
-**Neural network-based model approximation**: handle the creation and the training of neural networks to approximate interstellar medium numerical models (https://github.com/einigl/ism-model-nn-approximation).
+[**Neural network-based model approximation**](<https://github.com/einigl/ism-model-nn-approximation>): handle the creation and the training of neural networks to approximate interstellar medium numerical models.
 
 ## References
 

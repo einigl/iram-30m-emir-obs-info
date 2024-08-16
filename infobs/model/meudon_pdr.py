@@ -24,20 +24,21 @@ class MeudonPDR:
         "angle": (0, 60)
     }
 
-    def __init__(
-        self,
-        kelvin: bool=True
-    ):
+    def __init__(self, kelvin: bool=True):
+        """
+
+        Parameters
+        ----------
+        kelvin : bool, optional
+            if True, predicted integrated intensities are expressed in K * km / s. Otherwise, they are expressed in erg cm-2 s-1 sr-1, by default True
+        """
         self.kelvin = kelvin
 
         # Load neural network
         model_name = "meudon_pdr_emulator"
         path_model = os.path.abspath(os.path.dirname(__file__))
-        
-        self.net = NeuralNetwork.load(
-            model_name,
-            path_model
-        )
+
+        self.net = NeuralNetwork.load(model_name, path_model)
 
         # Reference dataframe
         self.full_df = pd.read_csv(os.path.join(
@@ -48,10 +49,8 @@ class MeudonPDR:
         self.full_df = self.full_df.dropna(axis=0)
 
     @staticmethod
-    def check_parameters(
-        parameters: List[str]
-    ) -> None:
-        assert set(parameters) == {"Av", "G0", "Pth", "angle"} 
+    def check_parameters(parameters: List[str]) -> None:
+        assert set(parameters) == {"Av", "G0", "Pth", "angle"}
 
     def predict(
         self,
@@ -59,23 +58,32 @@ class MeudonPDR:
         lines: Optional[List[str]]=None,
         kappa: Sampler=Constant(1.),
     ) -> pd.DataFrame:
+        """predicts 
+
+        _extended_summary_
+
+        Parameters
+        ----------
+        df_params : pd.DataFrame
+            dataframe containing of physical parameter values
+        lines : Optional[List[str]], optional
+            list of lines to prodict (if None, all lines are predicted), by default None
+        kappa : Sampler, optional
+            scaling factor that includes e.g., beam dilution, by default Constant(1.)
+
+        Returns
+        -------
+        pd.DataFrame
+            predicted integrated intensities for each physical parameter vector
         """
-        TODO
-        """    
         if lines is None:
             lines = self.full_df["line_id"].to_list()
 
         # Restrictions
-
-        self.net.restrict_to_output_subset(
-            lines
-        )
+        self.net.restrict_to_output_subset(lines)
 
         # Use the appropriate names for the network
-
-        self.check_parameters(
-            df_params.columns.to_list()
-        )
+        self.check_parameters(df_params.columns.to_list())
 
         df_params_net = df_params.rename(columns={
             "Av": "Avmax",
@@ -85,31 +93,26 @@ class MeudonPDR:
         })
 
         # Conversion from G0 to radm
-
         df_params_net["radm"] = g0_to_radm(df_params_net["radm"])
 
         # Reorder inputs
-
         df_params_net = df_params_net[self.net.inputs_names]
 
         # PDR code predictions
-
         Y = 10**self.net.evaluate(df_params_net.values, transform_inputs=True)
-        
+
         # Unit conversion
         freqs = 1e9 * self.full_df[self.full_df["line_id"].isin(lines)]["freq"].to_numpy()
         if self.kelvin:
             Y = erg_to_kelvin(Y, freqs)
 
         # Apply kappa
-
         _kappa = kappa.get(Y.shape[0]).reshape(-1, 1)
 
         df = pd.DataFrame(
             np.hstack((df_params.values, _kappa, _kappa * Y)),
             columns=df_params.columns.to_list() + ["kappa"] + self.net.current_output_subset
         )
-
         return df
 
     @staticmethod
@@ -128,10 +131,8 @@ class MeudonPDR:
     def all_lines() -> List[str]:
         full_df = MeudonPDR._get_table()
         return full_df.index.to_list()
-    
+
     @staticmethod
-    def frequencies(
-        lines: List[str]
-    ) -> Dict[str, float]:
+    def frequencies(lines: List[str]) -> Dict[str, float]:
         full_df = MeudonPDR._get_table()
         return {line: full_df.loc[line, "freq"] for line in lines}

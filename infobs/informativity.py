@@ -15,10 +15,7 @@ from .simulator import Simulator
 import infovar
 
 
-__all__ = [
-    "PDRGetter",
-    "Infobs"
-]
+__all__ = ["PDRGetter", "Infobs"]
 
 class PDRGetter(infovar.StandardGetter):
     """
@@ -34,11 +31,9 @@ class PDRGetter(infovar.StandardGetter):
         kappa: Sampler=Constant(1.),
         seed: Optional[int]=None
     ):
-        
+
         # Simulator
-        self.simulator = Simulator(
-            instrument
-        )
+        self.simulator = Simulator(instrument)
 
         # Load and preprocess data
         df = self.simulator.simulate(
@@ -69,7 +64,7 @@ class Infobs:
     ):
         self.discrete_handler = infovar.DiscreteHandler()
         self.continuous_handler = infovar.ContinuousHandler()
-        
+
         getter = PDRGetter(
             instrument,
             n_samples,
@@ -82,29 +77,17 @@ class Infobs:
         self.discrete_handler.set_getter(getter.get)
         self.continuous_handler.set_getter(getter.get)
 
-        self.plotter = InfoPlotter(
-            latex_line,
-            latex_param
-        )
+        self.plotter = InfoPlotter(latex_line, latex_param)
 
-    def set_path(
-        self,
-        save_path: str
-    ) -> None:
+    def set_path(self, save_path: str) -> None:
         self.discrete_handler.set_paths(save_path)
         self.continuous_handler.set_paths(save_path)
 
-    def set_regimes(
-        self,
-        regimes: Dict[str, Dict]
-    ) -> None:
+    def set_regimes(self, regimes: Dict[str, Dict]) -> None:
         self.discrete_handler.set_restrictions(regimes)
 
-    def reset(
-        self
-    ) -> None:
-        """
-        Reset every data saved at the current path. Must be used carefully.
+    def reset(self) -> None:
+        """Reset every data saved at the current path. Must be used carefully.
         """
         raise NotImplementedError("TODO")
 
@@ -294,7 +277,7 @@ class Infobs:
             mis[i] = [el["mi"]["value"] for el in entries]
             if errorbars:
                 stds[i] = [el["mi"]["std"] for el in entries]
-        
+
         if labels is not None:
             labels = {
                 0: labels[0],
@@ -359,7 +342,7 @@ class Infobs:
             parameters,
             inputs
         )
-            
+
     def get_info_maps_max(
         self,
         lines_iterable: Iterable[List[str]],
@@ -367,7 +350,7 @@ class Infobs:
         xaxis_param: str,
         yaxis_param: str,
     ) -> float:
-        
+
         l = []
         for lines in lines_iterable:
             entry = self.continuous_handler.read(
@@ -375,9 +358,7 @@ class Infobs:
                 parameters,
                 [xaxis_param, yaxis_param]
             )
-            l.append(
-                np.nanmax(entry["stats"]["mi"]["data"])
-            )
+            l.append(np.nanmax(entry["stats"]["mi"]["data"]))
 
         return np.nanmax(l)
 

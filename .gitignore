@@ -4,6 +4,13 @@ poetry.lock
 todo.md
 conversion.png
 
+
+examples/meudonpdr/profiles
+examples/meudonpdr/slices
+examples/informativity/**/*.json
+examples/informativity/**/*.pickle
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
