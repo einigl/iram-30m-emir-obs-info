@@ -60,6 +60,9 @@ class Constant(Sampler):
     def get(self, n: int) -> np.ndarray:
         return self.value * np.ones(n, dtype=float)
 
+    def copy_other_bounds(self, value: float):
+        return Constant(value)
+
     def __str__(self):
         return f"Constant(value={self.value})"
 

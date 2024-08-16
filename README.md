@@ -8,7 +8,34 @@ This emulator enables a thousand predictions to be made in around 10 ms on a lap
 
 ## Installation
 
-**TODO**
+Before installing, clone the [**InfoVar**](<https://github.com/einigl/infovar>) repo next to this one.
+
+To install `infobs`:
+
+Step 1: Create a virtual environment and activate it:
+
+```shell
+python -m venv venv
+source venv/bin/activate
+```
+
+Step 2 : install with pip:
+
+```shell
+pip install -e .
+```
+
+**Note :** to deactivate the virtual env :
+
+```shell
+deactivate
+```
+
+To delete the virtual environment:
+
+```shell
+rm -r venv
+```
 
 ## Get started
 

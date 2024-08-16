@@ -66,8 +66,9 @@ def integrate_noise(rms: float, n: int, dv: Optional[float]=None) -> float:
 
     If `dv` is omitted, we assume that `rms` is already integrated over a single velocity channel [K.km.s^-1].
 
-    T: intensity [K] or integrated intensity [K.km.s^-1]
+    rsm: intensity [K] or integrated intensity [K.km.s^-1]
     n: number of velocity channel to integrate
     dv: velocity channel width [km.s] (optional)
     """
+    if dv is None: dv = 1.0
     return n**0.5 * rms * dv
