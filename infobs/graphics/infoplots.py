@@ -74,7 +74,8 @@ class InfoPlotter():
         errs: Optional[List[Union[float, Tuple[float, float]]]]=None,
         colors: Optional[List[str]]=None,
         sort:bool=False,
-        short_names: bool=True,
+        nfirst: Optional[int]=None,
+        short_names: bool=False,
         rotation: int=90,
         bottom_val: Optional[float]=None
     ) -> Axes:
@@ -84,17 +85,23 @@ class InfoPlotter():
         ###
         width = 0.6
         capsize = 8
-        fontsize = 24
+        fontsize = 20
         ###
 
         assert len(mis) == len(lines)
+        assert sort or (nfirst is None)
 
         ax = plt.gca()
 
         if sort:
             indices = np.array(mis).argsort()[::-1]
+            if nfirst is not None:
+                indices = indices[:nfirst]
+
             mis = [mis[i] for i in indices]
             lines = [lines[i] for i in indices]
+            if errs is not None:
+                errs = [errs[i] for i in indices]
 
         barlist = ax.bar(
             np.arange(len(mis)), mis, width=width, color=self.default_color,
@@ -111,22 +118,6 @@ class InfoPlotter():
 
         for b in barlist:
             b.set_linewidth(1.5)
-
-        # if zoom_in:
-        #     if errs is None:
-        #         _errs_low, _errs_upp = 0., 0.
-        #     elif isinstance(errs[0], (List, Tuple)):
-        #         _errs_low = np.array([el[0] for el in errs])
-        #         _errs_upp = np.array([el[1] for el in errs])
-        #     else:
-        #         _errs_low, _errs_upp = errs, errs
-
-        #     _min = np.min(mis - _errs_low)
-        #     _max = np.max(mis + _errs_upp)
-        #     _ptp = _max - _min
-        #     low = max(_min - 0.1 * _ptp, 0.)
-        #     upp = _max + 0.1 * _ptp
-        #     plt.ylim([low, upp])
 
         ha = "center" if rotation%90 == 0 else "right"
         rotation_mode = "default" if rotation%90 == 0 else "anchor"
@@ -150,10 +141,7 @@ class InfoPlotter():
         short_names: bool=True
     ) -> Figure:
         ###
-        dpi = 200
         cmap = 'OrRd'
-        xscale = 1.0
-        yscale = 1.0
         ###
 
         # fig, ax = plt.subplots(1, 1, figsize = (xscale*6.4, yscale*4.8), dpi=dpi)
@@ -291,51 +279,6 @@ class InfoPlotter():
 
         return ax
 
-# def plot_mi_bar_comparison(
-#         self,
-#         lines: List[str],
-#         mis: Dict[str, List[float]],
-#         labels: Dict[str, str],
-#         colors: Dict[str, str],
-#         short_names: bool=True,
-#         rotation: int=90,
-#         zoom_in: bool=False
-#     ) -> Axes:
-#         """
-#         TODO
-#         """
-#         ###
-#         width = 0.6
-#         capsize = 6
-#         fontsize = 16
-#         ###
-
-#         ax = plt.gca()
-
-#         keys = list(mis.keys())
-#         for i in range(len(lines)):
-#             _mis = [mis[key][i] for key in keys]
-#             order = np.argsort(_mis)[::-1]
-#             _mis = [_mis[k] for k in order]
-#             _keys = [keys[k] for k in order]
-
-#             for k, _key in enumerate(_keys):
-#                 ax.bar(
-#                     [i], [_mis[k]], width=width,
-#                     color=colors[_key], label=labels[_key] if i == 0 else None,
-#                     alpha=
-#                 )
-
-#         ax.set_xticks(np.arange(len(lines)))
-#         ax.set_xticklabels(["$"+self.lines_comb_formatter(l, short=short_names)+"$" for l in lines], rotation=rotation, fontsize=fontsize)#, ha="right")
-#         plt.yticks(fontsize=fontsize)
-
-#         # ax.set_xlabel('Integrated molecular lines', labelpad=24)
-#         ax.set_ylabel('Mutual information (bits)', labelpad=24, fontsize=fontsize)
-
-#         plt.legend(fontsize=fontsize)
-
-#         return ax
 
     # MI plots (continuous)
 
@@ -349,18 +292,21 @@ class InfoPlotter():
 
     def plot_mi_map(
         self,
-        xticks: np.ndarray, yticks: np.ndarray,
-        mat: np.ndarray, vmax: Optional[float]=None, cmap: str="jet",
-        paramx: Optional[str]=None, paramy: Optional[str]=None
+        xticks: np.ndarray,
+        yticks: np.ndarray,
+        mat: np.ndarray,
+        vmax: Optional[float]=None,
+        cmap: str="jet",
+        paramx: Optional[str]=None,
+        paramy: Optional[str]=None
     ):
-        fig = plt.figure(dpi=125)
         ax = plt.gca()
 
         X, Y = np.meshgrid(xticks, yticks)
 
         im = ax.pcolor(X, Y, mat, cmap=cmap, vmin=0, vmax=vmax)
 
-        cbar = fig.colorbar(im, ax=ax)
+        cbar = plt.colorbar(im, ax=ax) # fig.colorbar(...)
         cbar.set_label("Amount of information (bits)", labelpad=10)
 
         ax.set_xscale('log')
@@ -369,7 +315,7 @@ class InfoPlotter():
         ax.set_xlabel(f"${self.param_formatter(paramx)}$")
         ax.set_ylabel(f"${self.param_formatter(paramy)}$")
 
-        return fig
+        return ax
 
     def plot_mi_map_comparison(
         self,

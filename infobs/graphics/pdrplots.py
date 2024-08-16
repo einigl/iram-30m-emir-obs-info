@@ -30,6 +30,29 @@ class PDRPlotter:
     Class to handle the plotting of profiles and slices in the parameter space in a very user-friendly way.
     """
 
+    parameters = ["Av", "G0", "Pth", "angle"]
+    
+    param_units_raw = {
+        "Av": "mag",
+        "G0": "",
+        "Pth": "K.cm-3",
+        "angle": "deg"
+    }
+
+    param_units_latex = {
+        "Av": "mag",
+        "G0": "",
+        "Pth": "K.cm$^{-3}$",
+        "angle": "deg"
+    }
+
+    param_scales = {
+        "Av": "log",
+        "G0": "log",
+        "Pth": "log",
+        "angle": "linear"
+    }
+
     def __init__(
         self,
         kelvin: bool=True
@@ -41,28 +64,6 @@ class PDRPlotter:
         self.kelvin = kelvin
 
         self.model = MeudonPDR(kelvin)
-
-        self.parameters = ["Av", "G0", "Pth", "angle"]
-        self.param_units_raw = {
-            "Av": "mag",
-            "G0": "",
-            "Pth": "K.cm-3",
-            "angle": "deg"
-        }
-
-        self.param_units_latex = {
-            "Av": "mag",
-            "G0": "",
-            "Pth": "K.cm$^{-3}$",
-            "angle": "deg"
-        }
-
-        self.param_scales = {
-            "Av": "log",
-            "G0": "log",
-            "Pth": "log",
-            "angle": "linear"
-        }
 
     def intensity_unit_latex(self) -> str:
         if self.kelvin:

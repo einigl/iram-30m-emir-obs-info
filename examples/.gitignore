@@ -1,3 +1,4 @@
 meudonpdr/profiles
 meudonpdr/slices
-informativity/*.json
+informativity/**/*.json
+informativity/**/*.pickle

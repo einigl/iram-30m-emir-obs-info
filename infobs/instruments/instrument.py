@@ -4,6 +4,7 @@ from typing import List, Dict, Tuple, Union, Optional
 import numpy as np
 import pandas as pd
 
+from ..graphics._ism_lines_helpers import filter_molecules, molecules_among_lines
 from ..model import MeudonPDR
 from .. import util
 
@@ -69,6 +70,17 @@ class Instrument(ABC):
             raise ValueError(f"DataFrame contains lines that are not available for this instrument: {list(set(line_names) & set(self.lines))}")
         
         return df_params, df_lines
+
+    def available_molecules(
+        self
+    ) -> List[str]:
+        return molecules_among_lines(self.lines)
+
+    def available_lines(
+        self,
+        molecules: Union[str, List[str]]=[]
+    ) -> List[str]:
+        return filter_molecules(self.lines, molecules)
 
     @abstractmethod
     def __str__(self):
