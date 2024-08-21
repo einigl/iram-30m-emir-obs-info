@@ -5,6 +5,7 @@ from typing import List, Literal, Optional, Tuple, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.axes import Axes
 from matplotlib.cm import ScalarMappable
 from matplotlib.colorbar import Colorbar
 from matplotlib.colors import LogNorm, Normalize
@@ -14,15 +15,11 @@ from matplotlib.ticker import (
     MultipleLocator,
     NullFormatter,
 )
-from matplotlib.axes import Axes
 
 from ..model import MeudonPDR
-
 from .latex import LaTeX, latex_line, latex_param
 
-__all__ = [
-    "PDRPlotter"
-]
+__all__ = ["PDRPlotter"]
 
 
 class PDRPlotter:
@@ -31,32 +28,14 @@ class PDRPlotter:
     """
 
     parameters = ["Av", "G0", "Pth", "angle"]
-    
-    param_units_raw = {
-        "Av": "mag",
-        "G0": "",
-        "Pth": "K.cm-3",
-        "angle": "deg"
-    }
 
-    param_units_latex = {
-        "Av": "mag",
-        "G0": "",
-        "Pth": "K.cm$^{-3}$",
-        "angle": "deg"
-    }
+    param_units_raw = {"Av": "mag", "G0": "", "Pth": "K.cm-3", "angle": "deg"}
 
-    param_scales = {
-        "Av": "log",
-        "G0": "log",
-        "Pth": "log",
-        "angle": "linear"
-    }
+    param_units_latex = {"Av": "mag", "G0": "", "Pth": "K.cm$^{-3}$", "angle": "deg"}
 
-    def __init__(
-        self,
-        kelvin: bool=True
-    ):
+    param_scales = {"Av": "log", "G0": "log", "Pth": "log", "angle": "linear"}
+
+    def __init__(self, kelvin: bool = True):
         """
         Plotter for 1D and 2D line profiles.
         """
@@ -115,7 +94,7 @@ class PDRPlotter:
         legend: bool = True,
         latex: bool = True,
         fontsize: int = 12,
-        legend_loc: str = "best"
+        legend_loc: str = "best",
     ) -> None:
         """
         Only one variable among Avmax, G0, Pth and angle has to be null.
@@ -132,12 +111,7 @@ class PDRPlotter:
         assert isinstance(fontsize, int)
 
         # Parameter to plot
-        params = {
-            "Av": Av,
-            "G0": G0,
-            "Pth": Pth,
-            "angle": angle
-        }
+        params = {"Av": Av, "G0": G0, "Pth": Pth, "angle": angle}
         for p in params:
             if params[p] is None:
                 param_to_plot = p
@@ -157,14 +131,11 @@ class PDRPlotter:
         df_params = pd.DataFrame.from_dict(d, orient="columns")
 
         # Evaluate model
-        df_lines = self.model.predict(
-            df_params,
-            lines
-        )
+        df_lines = self.model.predict(df_params, lines)
 
         # Plot profiles
         with LaTeX(activate=latex):
-        
+
             for line in lines:
                 lines = plt.plot(
                     df_params[param_to_plot],
@@ -222,7 +193,7 @@ class PDRPlotter:
         n_samples: int = 100,
         legend: bool = True,
         latex: bool = True,
-        figsize: Tuple[float, float] = (6.4, 0.6*4.8),
+        figsize: Tuple[float, float] = (6.4, 0.6 * 4.8),
         dpi: int = 150,
     ) -> None:
         """TODO"""
@@ -243,7 +214,7 @@ class PDRPlotter:
             if row.isnull()["lines"]:
                 continue
             lines = [subs for subs in row["lines"].strip().split(" ") if len(subs) > 0]
-            
+
             row = row[self.parameters]
             # Ignore a row if more than one parameter is blank, an error is raised
             if (row.isnull()).sum() > 1:
@@ -316,7 +287,6 @@ class PDRPlotter:
             ax.yaxis.set_minor_locator(minorLocator)
             ax.yaxis.set_minor_formatter(NullFormatter())
 
-
     def plot_slice(
         self,
         line: str,
@@ -332,12 +302,12 @@ class PDRPlotter:
         legend: bool = True,
         latex: bool = True,
         fontsize: int = 12,
-        legend_loc: str = "best"
+        legend_loc: str = "best",
     ) -> Tuple[Axes, Colorbar]:
         """
         Only one variable among P, Avmax, radm and angle has to be null.
         """
-        
+
         # Argument checking (TODO: compléter)
         assert isinstance(line, str)
         assert (Av is None) + (G0 is None) + (Pth is None) + (angle is None) == 2
@@ -347,12 +317,7 @@ class PDRPlotter:
         assert isinstance(fontsize, int)
 
         # Parameters to plot
-        params = {
-            "Av": Av,
-            "G0": G0,
-            "Pth": Pth,
-            "angle": angle
-        }
+        params = {"Av": Av, "G0": G0, "Pth": Pth, "angle": angle}
         params_to_plot = []
         for p in params:
             if params[p] is not None:
@@ -375,10 +340,7 @@ class PDRPlotter:
 
         X, Y = np.meshgrid(*l_mesh)
 
-        d_mesh = {
-            params_to_plot[0]: X.flatten(),
-            params_to_plot[1]: Y.flatten()
-        }
+        d_mesh = {params_to_plot[0]: X.flatten(), params_to_plot[1]: Y.flatten()}
 
         # Parameters DataFrame
         d = dict.fromkeys(self.param_scales.keys(), None)
@@ -390,15 +352,12 @@ class PDRPlotter:
         df_params = pd.DataFrame.from_dict(d, orient="columns")
 
         # Evaluate model
-        df_line = self.model.predict(
-            df_params,
-            [line]
-        )
+        df_line = self.model.predict(df_params, [line])
         Z = df_line[line].to_numpy().reshape(n_samples, n_samples)
 
         # Plot profiles
         with LaTeX(activate=latex):
-        
+
             if logz:
                 norm = LogNorm(vmin=Z.min(), vmax=Z.max())
             else:
@@ -424,7 +383,7 @@ class PDRPlotter:
                 )
                 plt.clabel(cs, cs.levels, fmt=lambda x: f"{x:.1f}", fontsize=8)
 
-            else:               
+            else:
                 im = plt.pcolor(
                     X,
                     Y,
@@ -455,7 +414,7 @@ class PDRPlotter:
                 self._mimic_log_axes(
                     plt.gca(),
                     self.param_scales[params_to_plot[0]],
-                    self.param_scales[params_to_plot[1]]
+                    self.param_scales[params_to_plot[1]],
                 )
                 pass
 
@@ -475,11 +434,7 @@ class PDRPlotter:
             )
 
             if legend:
-                leg = plt.legend(
-                    fontsize=fontsize,
-                    handletextpad=-2.0,
-                    loc=legend_loc
-                )
+                leg = plt.legend(fontsize=fontsize, handletextpad=-2.0, loc=legend_loc)
                 for item in leg.legendHandles:
                     item.set_visible(False)
 
@@ -555,7 +510,7 @@ class PDRPlotter:
                     legend=legend,
                     latex=latex,
                 )
-                
+
                 filename = os.path.join(path_outputs, f"{i}_{n_blank_1}_{n_blank_2}")
                 fig.savefig(filename, bbox_inches="tight")
                 plt.close(fig)

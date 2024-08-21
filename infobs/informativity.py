@@ -1,21 +1,19 @@
 import itertools as itt
-from typing import Dict, List, Optional, Union, Iterable
 from math import ceil
+from typing import Dict, Iterable, List, Optional, Union
 
+import infovar
 import numpy as np
 from matplotlib.axes import Axes
 
-from .model import MeudonPDR
-from .instruments import Instrument
-from .sampling import Sampler, Constant
 from .graphics import InfoPlotter, PDRPlotter, latex_line, latex_param
-
+from .instruments import Instrument
+from .model import MeudonPDR
+from .sampling import Constant, Sampler
 from .simulator import Simulator
 
-import infovar
-
-
 __all__ = ["PDRGetter", "Infobs"]
+
 
 class PDRGetter(infovar.StandardGetter):
     """
@@ -28,8 +26,8 @@ class PDRGetter(infovar.StandardGetter):
         n_samples: int,
         samplers: List[Sampler],
         obstime: Union[float, List[float]],
-        kappa: Sampler=Constant(1.),
-        seed: Optional[int]=None
+        kappa: Sampler = Constant(1.0),
+        seed: Optional[int] = None,
     ):
 
         # Simulator
@@ -37,12 +35,7 @@ class PDRGetter(infovar.StandardGetter):
 
         # Load and preprocess data
         df = self.simulator.simulate(
-            n_samples,
-            samplers,
-            instrument.lines,
-            obstime,
-            kappa=kappa,
-            seed=seed
+            n_samples, samplers, instrument.lines, obstime, kappa=kappa, seed=seed
         )
 
         # Attributes
@@ -53,25 +46,19 @@ class PDRGetter(infovar.StandardGetter):
 
 
 class Infobs:
-
     def __init__(
         self,
         instrument: Instrument,
         n_samples: int,
         samplers: List[Sampler],
         obstime: Union[float, List[float]],
-        kappa: Sampler=Constant(1.)
+        kappa: Sampler = Constant(1.0),
     ):
         self.discrete_handler = infovar.DiscreteHandler()
         self.continuous_handler = infovar.ContinuousHandler()
 
         getter = PDRGetter(
-            instrument,
-            n_samples,
-            samplers,
-            obstime=obstime,
-            kappa=kappa,
-            seed=None
+            instrument, n_samples, samplers, obstime=obstime, kappa=kappa, seed=None
         )
 
         self.discrete_handler.set_getter(getter.get)
@@ -87,14 +74,10 @@ class Infobs:
         self.discrete_handler.set_restrictions(regimes)
 
     def reset(self) -> None:
-        """Reset every data saved at the current path. Must be used carefully.
-        """
+        """Reset every data saved at the current path. Must be used carefully."""
         raise NotImplementedError("TODO")
 
-
-    def compute_info(
-        self # TODO
-    ) -> None:
+    def compute_info(self) -> None:  # TODO
         raise NotImplementedError("TODO")
 
     def plot_info_bars(
@@ -102,12 +85,12 @@ class Infobs:
         lines_iterable: Iterable[List[str]],
         parameters: Union[str, List[str]],
         restriction: str,
-        errorbars: bool=True,
-        sort: bool=True,
-        nfirst: Optional[int]=None,
-        display_transitions: bool=True,
-        bottom_val: Optional[float]=None,
-        progress_bar: bool=False
+        errorbars: bool = True,
+        sort: bool = True,
+        nfirst: Optional[int] = None,
+        display_transitions: bool = True,
+        bottom_val: Optional[float] = None,
+        progress_bar: bool = False,
     ):
         lines_iterable = list(lines_iterable)
         n = len(lines_iterable)
@@ -115,36 +98,29 @@ class Infobs:
         inputs_dict = {
             "min_samples": 200,
             "statistics": ["mi"],
-            "restrictions": [restriction]
+            "restrictions": [restriction],
         }
 
         if errorbars:
-            inputs_dict.update({
-                "uncertainty": {
-                    "mi": {
-                        "name": "subsampling",
-                        "args": {
-                            "n": 5
-                        }
-                    }
-                }
-            })
+            inputs_dict.update(
+                {"uncertainty": {"mi": {"name": "subsampling", "args": {"n": 5}}}}
+            )
 
         self.discrete_handler.update(
             x_names=lines_iterable,
             y_names=parameters,
             inputs_dict=inputs_dict,
             iterable_x=True,
-            save_every=ceil(n/10),
+            save_every=ceil(n / 10),
             progress_bar=progress_bar,
-            total_iter=n
+            total_iter=n,
         )
 
         entries = self.discrete_handler.read(
             x_names=lines_iterable,
             y_names=parameters,
             restr=restriction,
-            iterable_x=True
+            iterable_x=True,
         )
 
         mis = [el["mi"]["value"] for el in entries]
@@ -160,7 +136,7 @@ class Infobs:
             sort=sort,
             nfirst=nfirst,
             short_names=not display_transitions,
-            bottom_val=bottom_val
+            bottom_val=bottom_val,
         )
 
         return ax
@@ -170,9 +146,9 @@ class Infobs:
         lines_iterable: Iterable[List[str]],
         parameters: Union[str, List[str]],
         restriction: str,
-        show_diag: bool=False,
-        display_transitions: bool=True,
-        progress_bar: bool=False
+        show_diag: bool = False,
+        display_transitions: bool = True,
+        progress_bar: bool = False,
     ):
         lines_iterable = list(lines_iterable)
         n = len(lines_iterable)
@@ -180,7 +156,7 @@ class Infobs:
         inputs_dict = {
             "min_samples": 200,
             "statistics": ["mi"],
-            "restrictions": [restriction]
+            "restrictions": [restriction],
         }
 
         self.discrete_handler.update(
@@ -188,9 +164,9 @@ class Infobs:
             y_names=parameters,
             inputs_dict=inputs_dict,
             iterable_x=True,
-            save_every=ceil(n/10),
+            save_every=ceil(n / 10),
             progress_bar=progress_bar,
-            total_iter=n
+            total_iter=n,
         )
 
         mis_mat = np.zeros((len(lines_iterable), len(lines_iterable))).tolist()
@@ -199,7 +175,7 @@ class Infobs:
             entry = self.discrete_handler.read(
                 x_names=[l1, l2] if l1 != l2 else [l1],
                 y_names=parameters,
-                restr=restriction
+                restr=restriction,
             )
 
             i, j = lines_iterable.index(l1), lines_iterable.index(l2)
@@ -211,7 +187,7 @@ class Infobs:
             lines_iterable,
             mis_mat,
             show_diag=show_diag,
-            short_names=not display_transitions
+            short_names=not display_transitions,
         )
 
         return ax
@@ -222,14 +198,14 @@ class Infobs:
         lines_iterable: Iterable[List[str]],
         parameters: Union[str, List[str]],
         restriction: str,
-        errorbars: bool=True,
-        sort: bool=True, #TODO
-        nfirst: Optional[int]=None, #TODO
-        labels: Optional[List[str]]=None,
-        display_transitions: bool=True,
-        bottom_val: Optional[float]=None,
-        progress_bar: bool=False,
-        fontsize: int=24
+        errorbars: bool = True,
+        sort: bool = True,  # TODO
+        nfirst: Optional[int] = None,  # TODO
+        labels: Optional[List[str]] = None,
+        display_transitions: bool = True,
+        bottom_val: Optional[float] = None,
+        progress_bar: bool = False,
+        fontsize: int = 24,
     ):
         lines_iterable = list(lines_iterable)
         n = len(lines_iterable)
@@ -237,20 +213,13 @@ class Infobs:
         inputs_dict = {
             "min_samples": 200,
             "statistics": ["mi"],
-            "restrictions": [restriction]
+            "restrictions": [restriction],
         }
 
         if errorbars:
-            inputs_dict.update({
-                "uncertainty": {
-                    "mi": {
-                        "name": "subsampling",
-                        "args": {
-                            "n": 5
-                        }
-                    }
-                }
-            })
+            inputs_dict.update(
+                {"uncertainty": {"mi": {"name": "subsampling", "args": {"n": 5}}}}
+            )
 
         mis = {}
         if errorbars:
@@ -262,16 +231,16 @@ class Infobs:
                 y_names=parameters,
                 inputs_dict=inputs_dict,
                 iterable_x=True,
-                save_every=ceil(n/10),
+                save_every=ceil(n / 10),
                 progress_bar=progress_bar,
-                total_iter=n
+                total_iter=n,
             )
 
             entries = infobs.discrete_handler.read(
                 x_names=lines_iterable,
                 y_names=parameters,
                 restr=restriction,
-                iterable_x=True
+                iterable_x=True,
             )
 
             mis[i] = [el["mi"]["value"] for el in entries]
@@ -279,10 +248,7 @@ class Infobs:
                 stds[i] = [el["mi"]["std"] for el in entries]
 
         if labels is not None:
-            labels = {
-                0: labels[0],
-                1: labels[1]
-            }
+            labels = {0: labels[0], 1: labels[1]}
 
         # TODO: ajouter sort et nfirst à plotter.plot_mi_bar_comparison
         ax = self.plotter.plot_mi_bar_comparison(
@@ -293,7 +259,7 @@ class Infobs:
             short_names=not display_transitions,
             bottom_val=bottom_val,
             show_legend=labels is not None,
-            fontsize=fontsize
+            fontsize=fontsize,
         )
 
         return ax
@@ -304,44 +270,34 @@ class Infobs:
         parameters: Union[str, List[str]],
         xaxis_param: str,
         yaxis_param: str,
-        points: int=50,
-        progress_bar: bool=True #TODO
+        points: int = 50,
+        progress_bar: bool = True,  # TODO
     ) -> None:
-        win_length = {
-            "Av": 2,
-            "G0": 10,
-            "Pth": 10,
-            "angle": 10
-        }
+        win_length = {"Av": 2, "G0": 10, "Pth": 10, "angle": 10}
 
         inputs = {
-            "windows": [{
-                "features": [xaxis_param, yaxis_param],
-                "bounds": [
-                    MeudonPDR.bounds[xaxis_param],
-                    MeudonPDR.bounds[yaxis_param]
-                ],
-                "bounds_include_windows": True,
-                "scale": [
-                    PDRPlotter.param_scales[xaxis_param],
-                    PDRPlotter.param_scales[yaxis_param]
-                ],
-                "length": [
-                    win_length[xaxis_param],
-                    win_length[yaxis_param]
-                ],
-                "points": [points, points],
-            }],
+            "windows": [
+                {
+                    "features": [xaxis_param, yaxis_param],
+                    "bounds": [
+                        MeudonPDR.bounds[xaxis_param],
+                        MeudonPDR.bounds[yaxis_param],
+                    ],
+                    "bounds_include_windows": True,
+                    "scale": [
+                        PDRPlotter.param_scales[xaxis_param],
+                        PDRPlotter.param_scales[yaxis_param],
+                    ],
+                    "length": [win_length[xaxis_param], win_length[yaxis_param]],
+                    "points": [points, points],
+                }
+            ],
             "min_samples": 200,
             "max_samples": 20_000,
             "statistics": ["mi"],
         }
 
-        self.continuous_handler.update(
-            lines,
-            parameters,
-            inputs
-        )
+        self.continuous_handler.update(lines, parameters, inputs)
 
     def get_info_maps_max(
         self,
@@ -354,9 +310,7 @@ class Infobs:
         l = []
         for lines in lines_iterable:
             entry = self.continuous_handler.read(
-                lines,
-                parameters,
-                [xaxis_param, yaxis_param]
+                lines, parameters, [xaxis_param, yaxis_param]
             )
             l.append(np.nanmax(entry["stats"]["mi"]["data"]))
 
@@ -368,13 +322,11 @@ class Infobs:
         parameters: Union[str, List[str]],
         xaxis_param: str,
         yaxis_param: str,
-        cmap: str="jet",
-        vmax: Optional[float]=None,
+        cmap: str = "jet",
+        vmax: Optional[float] = None,
     ) -> Axes:
         entry = self.continuous_handler.read(
-            lines,
-            parameters,
-            [xaxis_param, yaxis_param]
+            lines, parameters, [xaxis_param, yaxis_param]
         )
 
         mat = entry["stats"]["mi"]["data"].T

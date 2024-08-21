@@ -1,27 +1,22 @@
 from abc import ABC, abstractmethod, abstractproperty
-from typing import List, Dict, Tuple, Union, Optional
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 
+from .. import util
 from ..graphics._ism_lines_helpers import filter_molecules, molecules_among_lines
 from ..model import MeudonPDR
-from .. import util
 
-__all__ = [
-    "Instrument",
-    "StandardInstrument",
-    "IdealInstrument",
-    "MergedInstrument"
-]
+__all__ = ["Instrument", "StandardInstrument", "IdealInstrument", "MergedInstrument"]
+
 
 class Instrument(ABC):
-    """abstract class for instruments, used to generate synthetic observations with the instrument noise properties
-    """
+    """abstract class for instruments, used to generate synthetic observations with the instrument noise properties"""
 
-    def __init__(self, lines: List[str], kelvin: bool=True):
+    def __init__(self, lines: List[str], kelvin: bool = True):
         assert isinstance(lines, list)
-        assert len(set(lines)) == len(lines) # Verifies that lines has no duplicates
+        assert len(set(lines)) == len(lines)  # Verifies that lines has no duplicates
         assert isinstance(kelvin, bool)
 
         self.lines = lines
@@ -52,7 +47,7 @@ class Instrument(ABC):
     def restrict_lines(self, lines: List[str]) -> None:
         assert set(lines) <= set(self.lines)
         assert isinstance(lines, list)
-        assert len(set(lines)) == len(lines) # Verifies that lines has no duplicates
+        assert len(set(lines)) == len(lines)  # Verifies that lines has no duplicates
         self.lines = lines
 
     def _split_dataframe(self, df) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -62,17 +57,16 @@ class Instrument(ABC):
 
         line_names = df_lines.columns.to_list()
         if not (set(line_names) <= set(self.lines)):
-            raise ValueError(f"DataFrame contains lines that are not available for this instrument: {list(set(line_names) & set(self.lines))}")
+            raise ValueError(
+                f"DataFrame contains lines that are not available for this instrument: {list(set(line_names) & set(self.lines))}"
+            )
 
         return df_params, df_lines
 
     def available_molecules(self) -> List[str]:
         return molecules_among_lines(self.lines)
 
-    def available_lines(
-        self,
-        molecules: Union[str, List[str]]=[]
-    ) -> List[str]:
+    def available_lines(self, molecules: Union[str, List[str]] = []) -> List[str]:
         return filter_molecules(self.lines, molecules)
 
     @abstractmethod
@@ -81,17 +75,15 @@ class Instrument(ABC):
 
 
 class StandardInstrument(Instrument, ABC):
-    """abstract class for standard instruments, used to generate synthetic observations with the instrument noise properties
-    """
+    """abstract class for standard instruments, used to generate synthetic observations with the instrument noise properties"""
 
     def __init__(
-        self,
-        lines: List[str],
-        linewidth: Optional[float]=None,
-        kelvin: bool=True
+        self, lines: List[str], linewidth: Optional[float] = None, kelvin: bool = True
     ):
         if (linewidth is None) != (self.dv is None):
-            raise ValueError("self.dv and linewidth must be None or not None simultaneously")
+            raise ValueError(
+                "self.dv and linewidth must be None or not None simultaneously"
+            )
         self.linewidth = linewidth
 
         super().__init__(lines, kelvin)
@@ -127,14 +119,12 @@ class StandardInstrument(Instrument, ABC):
         ref_obstime = np.array([self.ref_obstime[line] for line in df_lines.columns])
         percent = np.array([self.percent[line] for line in df_lines.columns])
 
-        sigma_a = rms / (obstime/ref_obstime)**0.5 # Atmospheric noise
-        sigma_m = np.log(1 + percent/100) # Calibration error
+        sigma_a = rms / (obstime / ref_obstime) ** 0.5  # Atmospheric noise
+        sigma_m = np.log(1 + percent / 100)  # Calibration error
 
-        sigma_a = util.integrate_noise(sigma_a, self.linewidth/self.dv, self.dv)
+        sigma_a = util.integrate_noise(sigma_a, self.linewidth / self.dv, self.dv)
 
-        eps_a = np.random.normal(
-            loc=0., scale=sigma_a, size=df_lines.shape
-        )
+        eps_a = np.random.normal(loc=0.0, scale=sigma_a, size=df_lines.shape)
         eps_m = np.random.lognormal(
             mean=-(sigma_m**2) / 2, sigma=sigma_m, size=df_lines.shape
         )
@@ -146,14 +136,13 @@ class StandardInstrument(Instrument, ABC):
 
 
 class IdealInstrument(Instrument):
-    """Ideal instrument without atmospheric noise and calibration error.
-    """
+    """Ideal instrument without atmospheric noise and calibration error."""
 
-    def __init__(self, kelvin: bool=True):
+    def __init__(self, kelvin: bool = True):
         super().__init__(MeudonPDR.all_lines(), kelvin)
 
     def measure(self, df: pd.DataFrame, _: float) -> pd.DataFrame:
-        self._split_dataframe(df) # Only to check lines validity
+        self._split_dataframe(df)  # Only to check lines validity
         return df
 
     def __str__(self):
@@ -161,39 +150,42 @@ class IdealInstrument(Instrument):
 
 
 class MergedInstrument(Instrument):
-    """combinations of multiple instruments
-    """
+    """combinations of multiple instruments"""
 
-    def __init__(self, instruments: List[Instrument], kelvin: bool=True):
+    def __init__(self, instruments: List[Instrument], kelvin: bool = True):
         self.instruments = instruments
 
         lines = []
         for instru in instruments:
             intersect = list(set(lines) & set(instru.lines))
             if len(intersect) != 0:
-                raise ValueError(f"Instrument {instru} contains lines that are already handled by previous instrument: {intersect}")
+                raise ValueError(
+                    f"Instrument {instru} contains lines that are already handled by previous instrument: {intersect}"
+                )
             lines.extend(instru.lines)
 
         super().__init__(lines, kelvin)
 
     def measure(
-        self,
-        df: pd.DataFrame,
-        obstime: Union[float, List[float]]
+        self, df: pd.DataFrame, obstime: Union[float, List[float]]
     ) -> pd.DataFrame:
         if isinstance(obstime, (float, int)):
             obstime = [obstime] * len(self.instruments)
         elif len(obstime) != len(self.instruments):
-            raise ValueError("Number of integration times must be the same that the number of instruments")
+            raise ValueError(
+                "Number of integration times must be the same that the number of instruments"
+            )
 
         df_params, df_lines = self._split_dataframe(df)
 
         df_list = [
-            instru.measure(instru.filter_lines(df_lines), t)\
+            instru.measure(instru.filter_lines(df_lines), t)
             for instru, t in zip(self.instruments, obstime)
         ]
         df_out = pd.concat([df_params] + df_list, axis=1)
-        return df_out[df.columns.to_list()] # Reorder columns
+        return df_out[df.columns.to_list()]  # Reorder columns
 
     def __str__(self):
-        return "MergedInstrument: " + ", ".join([str(instru) for instru in self.instruments])
+        return "MergedInstrument: " + ", ".join(
+            [str(instru) for instru in self.instruments]
+        )

@@ -3,7 +3,7 @@ Implements helpers to process spectral lines formatted according to Meudon PDR c
 """
 
 import re
-from typing import List, Tuple, Union, Optional
+from typing import List, Optional, Tuple, Union
 from warnings import warn
 
 __all__ = [
@@ -18,18 +18,28 @@ __all__ = [
     "transition_to_latex",
     "line_to_latex",
     "remove_hyperfine",
-    "is_hyperfine"
+    "is_hyperfine",
 ]
 
 
 ## Global settings
 
+
 class Settings:
-    math_mode: bool = True # Controls whether latex code will be embedded in a math mode
-    ignored_transitions: List[str] = [] # Defines transitions to ignores (see _energy_to_latex)
-    ignore_electronic: bool = False # Choose whether to ignore electronic configurations
-    ignore_litterals: bool = False # Choose whether to ignore other configurations
-    only_rotational: bool = False # Choose a simplified description with only the rotational transition (J)
+    math_mode: bool = (
+        True  # Controls whether latex code will be embedded in a math mode
+    )
+    ignored_transitions: List[
+        str
+    ] = []  # Defines transitions to ignores (see _energy_to_latex)
+    ignore_electronic: bool = (
+        False  # Choose whether to ignore electronic configurations
+    )
+    ignore_litterals: bool = False  # Choose whether to ignore other configurations
+    only_rotational: bool = (
+        False  # Choose a simplified description with only the rotational transition (J)
+    )
+
 
 ## Dicts
 
@@ -97,13 +107,11 @@ _elstate_to_latex = {
 }
 
 # Literal to LaTeX
-_literal_to_latex = {
-    "pp": "p=+",
-    "pm": "p=-"
-}
+_literal_to_latex = {"pp": "p=+", "pm": "p=-"}
 
 
 ## Public functions
+
 
 def molecule_and_transition(line_name: str) -> Tuple[str, str]:
     """
@@ -123,22 +131,25 @@ def molecule_and_transition(line_name: str) -> Tuple[str, str]:
     """
     # Check if the input is in the good format
     if not "_" in line_name:
-        raise ValueError(f'line_name {line_name} is not in the appropriate format molecule_transition')
+        raise ValueError(
+            f"line_name {line_name} is not in the appropriate format molecule_transition"
+        )
     line_name = line_name.lower().strip()
 
     # Search for all matching prefixes
     prefixes = [s for s in _molecules_to_latex if line_name.startswith(s)]
     if len(prefixes) == 0:
-        return tuple(line_name.split('_', maxsplit=1))
+        return tuple(line_name.split("_", maxsplit=1))
 
     # Select the longest prefix
     idxmax = lambda ls: max(range(len(ls)), key=ls.__getitem__)
     prefix = prefixes[idxmax([len(s) for s in prefixes])]
 
     # Select the remaining suffix
-    suffix = line_name[len(prefix)+1:]
+    suffix = line_name[len(prefix) + 1 :]
 
     return prefix, suffix
+
 
 def molecule(line_name: str) -> str:
     """
@@ -156,6 +167,7 @@ def molecule(line_name: str) -> str:
     """
     return molecule_and_transition(line_name)[0]
 
+
 def transition(line_name: str) -> str:
     """
     Returns the raw strings of the transition.
@@ -171,6 +183,7 @@ def transition(line_name: str) -> str:
         Raw string representing the transition.
     """
     return molecule_and_transition(line_name)[1]
+
 
 def molecules_among_lines(names: List[str]) -> List[str]:
     """
@@ -188,6 +201,7 @@ def molecules_among_lines(names: List[str]) -> List[str]:
     """
     return list(dict.fromkeys([molecule_and_transition(name)[0] for name in names]))
 
+
 def is_line_of(name: str, mol: str) -> bool:
     """
     Returns True if `name` is a line of the chemical species `mol`, else False.
@@ -198,7 +212,7 @@ def is_line_of(name: str, mol: str) -> bool:
         Formatted line.
     mol: str
         Molecule.
-    
+
     Returns
     -------
     bool
@@ -207,9 +221,8 @@ def is_line_of(name: str, mol: str) -> bool:
     mol = mol.strip().lower()
     return molecule(name) == mol
 
-def filter_molecules(
-    names: List[str], mols: Union[str, List[str], None]
-) -> List[str]:
+
+def filter_molecules(names: List[str], mols: Union[str, List[str], None]) -> List[str]:
     """
     Returns a sublist of `names` with only lines of molecules contained in `mols`.
 
@@ -233,12 +246,15 @@ def filter_molecules(
     for i, mol in enumerate(mols):
         mols[i] = mol.strip().lower()
 
-    mols = [(_molecules_aliases[mol] if mol in _molecules_aliases else mol) for mol in mols]
+    mols = [
+        (_molecules_aliases[mol] if mol in _molecules_aliases else mol) for mol in mols
+    ]
 
     lines_mols = [molecule(name) for name in names]
     indices = [i for i, line_mol in enumerate(lines_mols) if line_mol in mols]
 
     return [names[i] for i in indices]
+
 
 def molecule_to_latex(molecule: str) -> str:
     """
@@ -257,11 +273,12 @@ def molecule_to_latex(molecule: str) -> str:
     if molecule in _molecules_to_latex:
         latex_molecule = "\\mathrm{{{}}}".format(_molecules_to_latex[molecule])
     else:
-        latex_molecule = molecule.translate(None, '_^')
+        latex_molecule = molecule.translate(None, "_^")
 
     if Settings.math_mode:
         return "$" + latex_molecule + "$"
     return latex_molecule
+
 
 def transition_to_latex(trans: str) -> str:
     """
@@ -322,6 +339,7 @@ def line_to_latex(line_name: str) -> str:
         return "$" + out + "$"
     return out
 
+
 def remove_hyperfine(line_name: str) -> str:
     """
     Returns the formatted line `line_name` without the degenerate energy levels.
@@ -340,16 +358,23 @@ def remove_hyperfine(line_name: str) -> str:
     """
     mol, trans = molecule_and_transition(line_name)
     if trans.count("__") != 1:
-        raise ValueError(f"{transition} is not a valid transition because it does not contain one occurence of the double underscore")
-    
+        raise ValueError(
+            f"{transition} is not a valid transition because it does not contain one occurence of the double underscore"
+        )
+
     trans_high, trans_low = trans.split("__")
     for prefix in ["f"]:
-        trans_high = "_".join([s for s in trans_high.split("_") if not s.startswith(prefix)])
-        trans_low = "_".join([s for s in trans_low.split("_") if not s.startswith(prefix)])
+        trans_high = "_".join(
+            [s for s in trans_high.split("_") if not s.startswith(prefix)]
+        )
+        trans_low = "_".join(
+            [s for s in trans_low.split("_") if not s.startswith(prefix)]
+        )
 
     return f"{mol}_{trans_high}__{trans_low}"
 
-def is_hyperfine(line: str, other: Optional[str]=None) -> bool:
+
+def is_hyperfine(line: str, other: Optional[str] = None) -> bool:
     """
     Returns whether the formatted line `line` contains hyperfine levels.
     If `other` is not None, returns whether the two lines correspond to the same hyperfine structure.
@@ -373,14 +398,18 @@ def is_hyperfine(line: str, other: Optional[str]=None) -> bool:
     _other = remove_hyperfine(other)
     return _line == _other
 
+
 # Local functions
+
 
 def _list_transitions(trans: str) -> Tuple[List[str], List[float], List[float]]:
     """
     Returns the lists of energy level names, high energy level and low energy level.
     """
     if trans.count("__") != 1:
-        raise ValueError(f"{trans} is not a valid transition because it does not contain one occurence of the double underscore")
+        raise ValueError(
+            f"{trans} is not a valid transition because it does not contain one occurence of the double underscore"
+        )
     high, low = trans.split("__")
 
     names = []
@@ -391,55 +420,63 @@ def _list_transitions(trans: str) -> Tuple[List[str], List[float], List[float]]:
         res_high = re.match("\A(fif|j|v|n|f|ka|kc)(\d*_\d\d*|\d*d\d*|\d*)", high)
         res_low = re.match("\A(fif|j|v|n|f|ka|kc)(\d*_\d\d*|\d*d\d*|\d*)", low)
         if res_high is not None and res_low is not None:
-            e_high, e_low = high[:res_high.end()], low[:res_low.end()]
+            e_high, e_low = high[: res_high.end()], low[: res_low.end()]
             n_high = re.match("\A(fif|j|v|n|f|ka|kc)", e_high).group()
             n_low = re.match("\A(fif|j|v|n|f|ka|kc)", e_low).group()
             if n_high != n_low:
-                raise ValueError(f"{trans} is not a valid transition because the energy levels are not in the same order in the description of the high and low levels")
-            if (not Settings.only_rotational and not n_high in Settings.ignored_transitions) or (Settings.only_rotational and n_high == 'j'):
+                raise ValueError(
+                    f"{trans} is not a valid transition because the energy levels are not in the same order in the description of the high and low levels"
+                )
+            if (
+                not Settings.only_rotational
+                and not n_high in Settings.ignored_transitions
+            ) or (Settings.only_rotational and n_high == "j"):
                 names.append(n_high)
-                high_lvls.append(_removeprefixes(e_high, n_high)\
-                    .replace('_', '/').replace('d', '.')
+                high_lvls.append(
+                    _removeprefixes(e_high, n_high).replace("_", "/").replace("d", ".")
                 )
-                low_lvls.append(_removeprefixes(e_low, n_low)\
-                    .replace('_', '/').replace('d', '.')
+                low_lvls.append(
+                    _removeprefixes(e_low, n_low).replace("_", "/").replace("d", ".")
                 )
-            high = _removeprefixes(high, e_high, '_')
-            low = _removeprefixes(low, e_low, '_')
+            high = _removeprefixes(high, e_high, "_")
+            low = _removeprefixes(low, e_low, "_")
             continue
 
         # Match electronic state
         res_high = re.match("\Ael\d*(po|so|do|p|s|d)", high)
         res_low = re.match("\Ael\d*(po|so|do|p|s|d)", low)
         if res_high is not None and res_low is not None:
-            e_high, e_low = high[:res_high.end()], low[:res_low.end()]
+            e_high, e_low = high[: res_high.end()], low[: res_low.end()]
             if not Settings.ignore_electronic and not Settings.only_rotational:
                 names.append("el")
                 high_lvls.append(_removeprefixes(e_high, "el"))
                 low_lvls.append(_removeprefixes(e_low, "el"))
-            high = _removeprefixes(high, e_high, '_')
-            low = _removeprefixes(low, e_low, '_')
+            high = _removeprefixes(high, e_high, "_")
+            low = _removeprefixes(low, e_low, "_")
             continue
 
         # Match literals
         res_high = re.match("\A(pp|pm)", high)
         res_low = re.match("\A(pp|pm)", low)
         if res_high is not None and res_low is not None:
-            e_high, e_low = high[:res_high.end()], low[:res_low.end()]
+            e_high, e_low = high[: res_high.end()], low[: res_low.end()]
             if not Settings.ignore_litterals and not Settings.only_rotational:
                 names.append("lit")
                 high_lvls.append(e_high)
                 low_lvls.append(e_low)
-            high = _removeprefixes(high, e_high, '_')
-            low = _removeprefixes(low, e_low, '_')
+            high = _removeprefixes(high, e_high, "_")
+            low = _removeprefixes(low, e_low, "_")
             continue
 
         if high == "" and low != "" or high != "" and low == "":
-            raise RuntimeError("high and low levels does not contain the same number of variables")
-        
+            raise RuntimeError(
+                "high and low levels does not contain the same number of variables"
+            )
+
         raise ValueError(f"transition {trans} is not a valid formatted line")
-                
+
     return names, high_lvls, low_lvls
+
 
 def _removeprefixes(string: str, *prefixes: str) -> str:
     """
@@ -454,8 +491,9 @@ def _removeprefixes(string: str, *prefixes: str) -> str:
     """
     for prefix in prefixes:
         if string.startswith(prefix):
-            string = string[len(prefix):]
+            string = string[len(prefix) :]
     return string[:]
+
 
 def _numerical_to_latex(num: str) -> str:
     """
@@ -475,19 +513,19 @@ def _numerical_to_latex(num: str) -> str:
     if re.match("\A\d*[/.]\d*\Z", num) is None:
         return num
 
-    if '/' in num:
-        a, b = num.split('/')
+    if "/" in num:
+        a, b = num.split("/")
         n, d = int(a), int(b)
     else:
-        a, b = num.split('.')
+        a, b = num.split(".")
 
-        if b == "0": 
+        if b == "0":
             n, d = int(a), 1
         elif b == "5":
-            n, d = 2*int(a)+1, 2
+            n, d = 2 * int(a) + 1, 2
         else:
             warn(f"x.{b} floats has not been implemented. Ignoring the floating part.")
-            n, d = int(a), 1 # Default behavior
+            n, d = int(a), 1  # Default behavior
 
     if n % d == 0:
         num_latex = f"{n // d}"
@@ -496,9 +534,8 @@ def _numerical_to_latex(num: str) -> str:
 
     return num_latex
 
-def _transition(
-    name: str, high_lvl: str, low_lvl: str
-) -> Tuple[str, str]:
+
+def _transition(name: str, high_lvl: str, low_lvl: str) -> Tuple[str, str]:
     """
     Returns a LaTeX string representing a non electronic transition.
 
@@ -521,15 +558,13 @@ def _transition(
     if name in _energy_to_latex:
         name_latex = _energy_to_latex[name]
     else:
-        name_latex = name + "={}" # Default behavior for unknown name
+        name_latex = name + "={}"  # Default behavior for unknown name
 
     high_lvl_latex = _numerical_to_latex(high_lvl)
     low_lvl_latex = _numerical_to_latex(low_lvl)
 
-    return (
-        name_latex.format(high_lvl_latex),
-        name_latex.format(low_lvl_latex)
-    )
+    return (name_latex.format(high_lvl_latex), name_latex.format(low_lvl_latex))
+
 
 def _eltransition(high: str, low: str) -> Tuple[str, str]:
     """
@@ -552,9 +587,18 @@ def _eltransition(high: str, low: str) -> Tuple[str, str]:
     num_high, orb_high = high[0], high[1:]
     num_low, orb_low = low[0], low[1:]
     return (
-        (_elstate_to_latex[orb_high].format(num_high) if orb_high in _elstate_to_latex else high),
-        (_elstate_to_latex[orb_low].format(num_low) if orb_low in _elstate_to_latex else low),
+        (
+            _elstate_to_latex[orb_high].format(num_high)
+            if orb_high in _elstate_to_latex
+            else high
+        ),
+        (
+            _elstate_to_latex[orb_low].format(num_low)
+            if orb_low in _elstate_to_latex
+            else low
+        ),
     )
+
 
 def _littransition(high: str, low: str) -> Tuple[str, str]:
     """
@@ -576,8 +620,9 @@ def _littransition(high: str, low: str) -> Tuple[str, str]:
     """
     return (
         _literal_to_latex[high] if high in _literal_to_latex else high,
-        _literal_to_latex[low] if low in _literal_to_latex else low
+        _literal_to_latex[low] if low in _literal_to_latex else low,
     )
+
 
 def _sort_transitions(
     names: List[str], high_lvls: List[int], low_lvls: List[int]
@@ -619,6 +664,7 @@ def _sort_transitions(
 
     return "({}\\,\\to\\,{})".format(descr_a[:-3], descr_b[:-3])
 
+
 def _simplified_transition(
     names: List[str], high_lvls: List[int], low_lvls: List[int]
 ) -> str:
@@ -641,7 +687,7 @@ def _simplified_transition(
 
     """
     assert len(names) == len(high_lvls) == len(low_lvls) == 1
-    assert names[0] == 'j'
+    assert names[0] == "j"
     h, l = high_lvls[0], low_lvls[0]
 
     # return "({}\\,\\to\\,{})".format(_numerical_to_latex(h), _numerical_to_latex(l))

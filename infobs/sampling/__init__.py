@@ -1,5 +1,5 @@
-from .samplers import *
 from .mixtures import *
+from .samplers import *
 
 __all__ = []
 __all__.extend(samplers.__all__)

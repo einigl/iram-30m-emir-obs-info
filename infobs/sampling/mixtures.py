@@ -4,21 +4,16 @@ import numpy as np
 
 from .samplers import Sampler
 
-__all__ = [
-    "Mixture"
-]
+__all__ = ["Mixture"]
+
 
 class Mixture(Sampler):
-    """mixture of probability distributions. To sample a value from this distribution: 
+    """mixture of probability distributions. To sample a value from this distribution:
     1) select which probability distribution to use (each probability distribution has a weight that determines its selection probability)
     2) draw a value from the selected probability distribution
     """
 
-    def __init__(
-        self,
-        samplers: List[Sampler],
-        weights: Optional[List[float]]=None
-    ):
+    def __init__(self, samplers: List[Sampler], weights: Optional[List[float]] = None):
         """
 
         Parameters
@@ -40,8 +35,6 @@ class Mixture(Sampler):
         self.p = weights / weights.sum()
 
     def get(self, n: int) -> np.ndarray:
-        samples = np.column_stack([
-            sampler.get(n) for sampler in self.samplers
-        ])
+        samples = np.column_stack([sampler.get(n) for sampler in self.samplers])
         idx = np.random.choice(np.arange(self.p.size), size=n, p=self.p)
         return samples[np.arange(n), idx]

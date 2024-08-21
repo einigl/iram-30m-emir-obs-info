@@ -3,13 +3,8 @@ from typing import Optional
 
 import numpy as np
 
-__all__ = [
-    "Sampler",
-    "Constant",
-    "Uniform",
-    "LogUniform",
-    "BoundedPowerLaw"
-]
+__all__ = ["Sampler", "Constant", "Uniform", "LogUniform", "BoundedPowerLaw"]
+
 
 class Sampler(ABC):
     """abstract sampler class"""
@@ -31,7 +26,7 @@ class Sampler(ABC):
         pass
 
     @abstractmethod
-    def copy_other_bounds(self, lower: float, upper: Optional[float]=None):
+    def copy_other_bounds(self, lower: float, upper: Optional[float] = None):
         """generates a copy of the considered sampler with new lower and upper bounds
 
         Parameters
@@ -43,13 +38,13 @@ class Sampler(ABC):
         """
         pass
 
+
 class Constant(Sampler):
-    """simplest possible probability distribution: a Dirac at a given value
-    """
+    """simplest possible probability distribution: a Dirac at a given value"""
 
     def __init__(self, value: float):
         """
-        
+
         Parameters
         ----------
         value : float
@@ -66,11 +61,11 @@ class Constant(Sampler):
     def __str__(self):
         return f"Constant(value={self.value})"
 
-class Uniform(Sampler):
-    """uniform distribution on a possible open-ended interval
-    """
 
-    def __init__(self, lower: float, upper: Optional[float]=None):
+class Uniform(Sampler):
+    """uniform distribution on a possible open-ended interval"""
+
+    def __init__(self, lower: float, upper: Optional[float] = None):
         """
 
         Parameters
@@ -88,16 +83,17 @@ class Uniform(Sampler):
     def get(self, n: int) -> np.ndarray:
         return np.random.uniform(self.lower, self.upper, n)
 
-    def copy_other_bounds(self, lower: float, upper: Optional[float]=None):
+    def copy_other_bounds(self, lower: float, upper: Optional[float] = None):
         return Uniform(lower, upper)
 
     def __str__(self):
         return f"Uniform(lower={self.lower}, upper={self.upper})"
 
+
 class LogUniform(Sampler):
-    """log-uniform distribution on a possible open-ended interval
-    """
-    def __init__(self, lower: float, upper: Optional[float]=None, base: float=10.):
+    """log-uniform distribution on a possible open-ended interval"""
+
+    def __init__(self, lower: float, upper: Optional[float] = None, base: float = 10.0):
         """
 
         Parameters
@@ -120,19 +116,19 @@ class LogUniform(Sampler):
     def get(self, n: int) -> np.ndarray:
         a = np.log(self.lower) / np.log(self.base)
         b = np.log(self.upper) / np.log(self.base)
-        return self.base**np.random.uniform(a, b, n)
+        return self.base ** np.random.uniform(a, b, n)
 
-    def copy_other_bounds(self, lower: float, upper: Optional[float]=None):
+    def copy_other_bounds(self, lower: float, upper: Optional[float] = None):
         return LogUniform(lower, upper, base=self.base)
 
     def __str__(self):
         return f"LogUniform(lower={self.lower}, upper={self.upper}, base={self.base})"
 
-class BoundedPowerLaw(Sampler):
-    """bounded power law distribution on a possible open-ended interval
-    """
 
-    def __init__(self, alpha: float, lower: float, upper: Optional[float]=None):
+class BoundedPowerLaw(Sampler):
+    """bounded power law distribution on a possible open-ended interval"""
+
+    def __init__(self, alpha: float, lower: float, upper: Optional[float] = None):
         """
 
         Parameters
@@ -154,9 +150,9 @@ class BoundedPowerLaw(Sampler):
     def get(self, n: int) -> np.ndarray:
         a = self.lower**self.alpha
         b = self.upper**self.alpha - a
-        return (a + b*np.random.rand(n))**(1/self.alpha)
+        return (a + b * np.random.rand(n)) ** (1 / self.alpha)
 
-    def copy_other_bounds(self, lower: float, upper: Optional[float]=None):
+    def copy_other_bounds(self, lower: float, upper: Optional[float] = None):
         return BoundedPowerLaw(self.alpha, lower, upper)
 
     def __str__(self):

@@ -1,5 +1,7 @@
 # IRAM 30-meter EMIR observations informativity
 
+![test coverage badge](./coverage.svg)
+
 This package implements tools to quantitatively estimate the usefulness of spectral line observations for estimating physical conditions.
 It provides a tool for simply reproducing observations made at IRAM 30-meter millimeter-wave telescope coupled with the EMIR receiver. Other instruments can also be simulated.
 
@@ -46,7 +48,7 @@ To get started, check out the jupyter notebooks presented in the `examples` fold
 To test, run:
 
 ```shell
-pytest && coverage-badge -o coverage.svg
+python -m pytest && coverage-badge -o coverage.svg
 ```
 
 ## Associated packages

@@ -3,16 +3,15 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 import pandas as pd
 
-from .model import MeudonPDR
 from .instruments import Instrument
-from .sampling import Sampler, Constant
-
+from .model import MeudonPDR
+from .sampling import Constant, Sampler
 
 __all__ = ["Simulator"]
 
+
 class Simulator:
-    """a class to generate synthetic observations of an environment
-    """
+    """a class to generate synthetic observations of an environment"""
 
     def __init__(self, instrument: Instrument):
         self.model = MeudonPDR()
@@ -20,9 +19,7 @@ class Simulator:
 
     @staticmethod
     def params_sampling(
-        n_samples: int,
-        samplers: Dict[str, Sampler],
-        seed: Optional[int]=None
+        n_samples: int, samplers: Dict[str, Sampler], seed: Optional[int] = None
     ) -> pd.DataFrame:
         """simulates `n_samples` samples of physical parameter vectors from the probability distributions set in `samplers`
 
@@ -42,21 +39,20 @@ class Simulator:
         """
         np.random.seed(seed)
 
-        Theta = [None] * len(samplers)
+        Theta = []
+        for name in samplers:
+            Theta.append(samplers[name].get(n_samples))
 
-        for i, name in enumerate(samplers):
-            Theta[i] = samplers[name].get(n_samples)
-
-        return pd.DataFrame(np.column_stack(Theta), columns=samplers.keys())
+        return pd.DataFrame(np.column_stack(Theta), columns=list(samplers.keys()))
 
     def simulate(
         self,
         n_samples: int,
         samplers: Dict[str, Sampler],
-        lines: Optional[List[str]]=None,
-        obstime: Union[float, List[float]]=None,
-        kappa: Sampler=Constant(1.),
-        seed: Optional[int]=None,
+        lines: Optional[List[str]] = None,
+        obstime: Union[float, List[float]] = None,
+        kappa: Sampler = Constant(1.0),
+        seed: Optional[int] = None,
     ) -> pd.DataFrame:
         """simulates `n_samples` samples from the probability distributions set in `samplers`, and then predicts the integrated intensities for all or a subset of lines, for a given integration time `obstime`.
 

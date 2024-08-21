@@ -1,8 +1,7 @@
-from .simulator import *
 from .informativity import *
-
-from .model import *
 from .instruments import *
+from .model import *
+from .simulator import *
 
 __all__ = []
 

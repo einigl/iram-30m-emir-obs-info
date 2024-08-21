@@ -1,6 +1,6 @@
+from .infoplots import *
 from .latex import *
 from .pdrplots import *
-from .infoplots import *
 
 __all__ = []
 __all__.extend(latex.__all__)

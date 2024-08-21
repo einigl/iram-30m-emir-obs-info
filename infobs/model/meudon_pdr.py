@@ -1,18 +1,15 @@
 import os
-from typing import Optional, Tuple, List, Dict
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-
 from nnbma import NeuralNetwork
 
-from ..sampling.samplers import Sampler, Constant
-from ..util import radm_to_g0, g0_to_radm, erg_to_kelvin
+from ..sampling.samplers import Constant, Sampler
+from ..util import erg_to_kelvin, g0_to_radm, radm_to_g0
 
+__all__ = ["MeudonPDR"]
 
-__all__ = [
-    "MeudonPDR"
-]
 
 class MeudonPDR:
 
@@ -21,10 +18,10 @@ class MeudonPDR:
         "Av": (1, 40),
         "G0": (radm_to_g0(1e0), radm_to_g0(1e5)),
         "Pth": (1e5, 1e9),
-        "angle": (0, 60)
+        "angle": (0, 60),
     }
 
-    def __init__(self, kelvin: bool=True):
+    def __init__(self, kelvin: bool = True):
         """
 
         Parameters
@@ -41,9 +38,9 @@ class MeudonPDR:
         self.net = NeuralNetwork.load(model_name, path_model)
 
         # Reference dataframe
-        self.full_df = pd.read_csv(os.path.join(
-            os.path.dirname(__file__), "full_table.csv"
-        ))
+        self.full_df = pd.read_csv(
+            os.path.join(os.path.dirname(__file__), "full_table.csv")
+        )
 
         # Remove lines whose frequency is not available
         self.full_df = self.full_df.dropna(axis=0)
@@ -55,10 +52,10 @@ class MeudonPDR:
     def predict(
         self,
         df_params: pd.DataFrame,
-        lines: Optional[List[str]]=None,
-        kappa: Sampler=Constant(1.),
+        lines: Optional[List[str]] = None,
+        kappa: Sampler = Constant(1.0),
     ) -> pd.DataFrame:
-        """predicts 
+        """predicts
 
         _extended_summary_
 
@@ -85,12 +82,9 @@ class MeudonPDR:
         # Use the appropriate names for the network
         self.check_parameters(df_params.columns.to_list())
 
-        df_params_net = df_params.rename(columns={
-            "Av": "Avmax",
-            "G0": "radm",
-            "Pth": "P",
-            "angle": "angle"
-        })
+        df_params_net = df_params.rename(
+            columns={"Av": "Avmax", "G0": "radm", "Pth": "P", "angle": "angle"}
+        )
 
         # Conversion from G0 to radm
         df_params_net["radm"] = g0_to_radm(df_params_net["radm"])
@@ -99,10 +93,12 @@ class MeudonPDR:
         df_params_net = df_params_net[self.net.inputs_names]
 
         # PDR code predictions
-        Y = 10**self.net.evaluate(df_params_net.values, transform_inputs=True)
+        Y = 10 ** self.net.evaluate(df_params_net.values, transform_inputs=True)
 
         # Unit conversion
-        freqs = 1e9 * self.full_df[self.full_df["line_id"].isin(lines)]["freq"].to_numpy()
+        freqs = (
+            1e9 * self.full_df[self.full_df["line_id"].isin(lines)]["freq"].to_numpy()
+        )
         if self.kelvin:
             Y = erg_to_kelvin(Y, freqs)
 
@@ -111,16 +107,18 @@ class MeudonPDR:
 
         df = pd.DataFrame(
             np.hstack((df_params.values, _kappa, _kappa * Y)),
-            columns=df_params.columns.to_list() + ["kappa"] + self.net.current_output_subset
+            columns=df_params.columns.to_list()
+            + ["kappa"]
+            + self.net.current_output_subset,
         )
         return df
 
     @staticmethod
     def _get_table() -> pd.DataFrame:
         # Reference dataframe
-        full_df = pd.read_csv(os.path.join(
-            os.path.dirname(__file__), "full_table.csv"
-        )).set_index("line_id")
+        full_df = pd.read_csv(
+            os.path.join(os.path.dirname(__file__), "full_table.csv")
+        ).set_index("line_id")
 
         # Remove lines whose frequency is not available
         full_df = full_df.dropna(axis=0)

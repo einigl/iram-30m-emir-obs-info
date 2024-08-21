@@ -1,6 +1,7 @@
-import unittest
 import os
 import sys
+import unittest
+
 import numpy as np
 
 sys.path.insert(0, os.path.join("../.."))
@@ -23,11 +24,7 @@ uniform_sampler = samplers.Uniform(lower, upper)
 new_uniform_sampler = uniform_sampler.copy_other_bounds(new_lower, upper)
 
 
-
-
-
 class TestConstant(unittest.TestCase):
-
     def test_get(self):
         self.assertEqual(np.max(np.abs(constant_sampler.get(n) - lower_arr)), 0.0)
 
@@ -40,7 +37,6 @@ class TestConstant(unittest.TestCase):
 
 
 class TestUniform(unittest.TestCase):
-
     def test_get(self):
         x = uniform_sampler.get(n)
         self.assertEqual(np.max(np.abs(constant_sampler.get(n) - lower_arr)), 0.0)
@@ -53,5 +49,5 @@ class TestUniform(unittest.TestCase):
         self.assertEqual(new_constant_sampler.__str__(), f"Constant(value={new_lower})")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

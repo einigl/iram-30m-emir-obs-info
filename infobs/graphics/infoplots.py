@@ -1,47 +1,38 @@
 import itertools as itt
-from typing import List, Dict, Tuple, Callable, Optional, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
+import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.patches import Rectangle
 from matplotlib.colors import to_rgba
+from matplotlib.figure import Figure
+from matplotlib.patches import Rectangle
 
-from ._util import truncate_colormap, expformat
+from ._util import expformat, truncate_colormap
 
-__all__ = [
-    "InfoPlotter"
-]
+__all__ = ["InfoPlotter"]
 
 
-class InfoPlotter():
+class InfoPlotter:
 
     line_formatter: Callable
     param_formatter: Callable
     math_mode: bool
 
-    def __init__(
-        self,
-        line_formatter: Callable,
-        param_formatter: Callable
-    ):
+    def __init__(self, line_formatter: Callable, param_formatter: Callable):
         self.line_formatter = line_formatter
         self.param_formatter = param_formatter
 
-        c = to_rgba('tab:blue')
+        c = to_rgba("tab:blue")
         self.default_color = (c[0], c[1], c[2], 0.6)
 
-        c = to_rgba('tab:green')
+        c = to_rgba("tab:green")
         self.alt_color = (c[0], c[1], c[2], 0.6)
 
     # Probability plots
-        
+
     def plot_prob_bar(
-        self,
-        lines: List[str],
-        probs: List[float],
-        short_names: bool=True
+        self, lines: List[str], probs: List[float], short_names: bool = True
     ) -> Figure:
         ###
         dpi = 200
@@ -54,16 +45,23 @@ class InfoPlotter():
         # fig, ax = plt.subplots(1, 1, figsize = (xscale*6.4, yscale*4.8), dpi=dpi)
         ax = plt.gca()
 
-        ax.bar(np.arange(len(probs)), probs, width=width, color='tab:blue')
+        ax.bar(np.arange(len(probs)), probs, width=width, color="tab:blue")
 
         ax.set_xticks(np.arange(len(probs)))
-        ax.set_xticklabels(["$"+self.lines_comb_formatter(l, short=short_names)+"$" for l in lines], rotation=45, fontsize=12, ha="right")
+        ax.set_xticklabels(
+            [
+                "$" + self.lines_comb_formatter(l, short=short_names) + "$"
+                for l in lines
+            ],
+            rotation=45,
+            fontsize=12,
+            ha="right",
+        )
 
-        ax.set_xlabel('Integrated molecular lines', labelpad=20)
-        ax.set_ylabel('Mutual information (bits)', labelpad=20)
+        ax.set_xlabel("Integrated molecular lines", labelpad=20)
+        ax.set_ylabel("Mutual information (bits)", labelpad=20)
 
-        return None #fig TODO
-
+        return None  # fig TODO
 
     # MI plots (discrete)
 
@@ -71,13 +69,13 @@ class InfoPlotter():
         self,
         lines: List[str],
         mis: List[float],
-        errs: Optional[List[Union[float, Tuple[float, float]]]]=None,
-        colors: Optional[List[str]]=None,
-        sort:bool=False,
-        nfirst: Optional[int]=None,
-        short_names: bool=False,
-        rotation: int=90,
-        bottom_val: Optional[float]=None
+        errs: Optional[List[Union[float, Tuple[float, float]]]] = None,
+        colors: Optional[List[str]] = None,
+        sort: bool = False,
+        nfirst: Optional[int] = None,
+        short_names: bool = False,
+        rotation: int = 90,
+        bottom_val: Optional[float] = None,
     ) -> Axes:
         """
         TODO
@@ -104,10 +102,20 @@ class InfoPlotter():
                 errs = [errs[i] for i in indices]
 
         barlist = ax.bar(
-            np.arange(len(mis)), mis, width=width, color=self.default_color,
-            edgecolor="black"
+            np.arange(len(mis)),
+            mis,
+            width=width,
+            color=self.default_color,
+            edgecolor="black",
         )
-        ax.errorbar(np.arange(len(mis)), mis, yerr=errs, fmt='none', capsize=capsize, color='tab:red')
+        ax.errorbar(
+            np.arange(len(mis)),
+            mis,
+            yerr=errs,
+            fmt="none",
+            capsize=capsize,
+            color="tab:red",
+        )
 
         if colors is not None:
             assert len(colors) == len(mis)
@@ -119,17 +127,26 @@ class InfoPlotter():
         for b in barlist:
             b.set_linewidth(1.5)
 
-        ha = "center" if rotation%90 == 0 else "right"
-        rotation_mode = "default" if rotation%90 == 0 else "anchor"
+        ha = "center" if rotation % 90 == 0 else "right"
+        rotation_mode = "default" if rotation % 90 == 0 else "anchor"
         ax.set_xticks(np.arange(len(mis)))
-        ax.set_xticklabels(["$"+self.lines_comb_formatter(l, short=short_names)+"$" for l in lines], rotation=rotation, fontsize=fontsize, ha=ha, rotation_mode=rotation_mode)
+        ax.set_xticklabels(
+            [
+                "$" + self.lines_comb_formatter(l, short=short_names) + "$"
+                for l in lines
+            ],
+            rotation=rotation,
+            fontsize=fontsize,
+            ha=ha,
+            rotation_mode=rotation_mode,
+        )
         plt.yticks(fontsize=fontsize)
 
         if bottom_val is not None:
             plt.ylim([bottom_val, None])
 
         # ax.set_xlabel('Integrated molecular lines', labelpad=24)
-        ax.set_ylabel('Mutual information (bits)', labelpad=24, fontsize=fontsize)
+        ax.set_ylabel("Mutual information (bits)", labelpad=24, fontsize=fontsize)
 
         return ax
 
@@ -137,11 +154,11 @@ class InfoPlotter():
         self,
         lines: List[str],
         mis: List[List[float]],
-        show_diag: bool=True,
-        short_names: bool=True
+        show_diag: bool = True,
+        short_names: bool = True,
     ) -> Figure:
         ###
-        cmap = 'OrRd'
+        cmap = "OrRd"
         ###
 
         # fig, ax = plt.subplots(1, 1, figsize = (xscale*6.4, yscale*4.8), dpi=dpi)
@@ -150,28 +167,32 @@ class InfoPlotter():
 
         mis = np.array(mis)
         mask = np.where(
-            np.tril(np.ones_like(mis), k=-1 if show_diag else 0),
-            float('nan'), 1.
+            np.tril(np.ones_like(mis), k=-1 if show_diag else 0), float("nan"), 1.0
         )
-        im = ax.imshow(mask * mis, origin='lower', cmap=cmap)
+        im = ax.imshow(mask * mis, origin="lower", cmap=cmap)
 
         cbar = fig.colorbar(im)
-        cbar.set_label('Mutual information (bits)', labelpad=30, rotation=270)
+        cbar.set_label("Mutual information (bits)", labelpad=30, rotation=270)
 
         ax.set_xticks(np.arange(mis.shape[0]))
         ax.set_yticks(np.arange(mis.shape[0]))
         ax.set_xticklabels(
-            ["$"+self.line_formatter(l, short=short_names)+"$" for l in lines],
-            rotation=45, ha='right', rotation_mode='anchor', fontsize=10
+            ["$" + self.line_formatter(l, short=short_names) + "$" for l in lines],
+            rotation=45,
+            ha="right",
+            rotation_mode="anchor",
+            fontsize=10,
         )
         ax.set_yticklabels(
-            ["$"+self.line_formatter(l, short=short_names)+"$" for l in lines],
-            rotation=45, ha='right', rotation_mode='anchor', fontsize=10
+            ["$" + self.line_formatter(l, short=short_names) + "$" for l in lines],
+            rotation=45,
+            ha="right",
+            rotation_mode="anchor",
+            fontsize=10,
         )
-            
+
         return fig
-    
-    
+
     # MI bar plots comparison
 
     def plot_mi_bar_comparison(
@@ -180,11 +201,11 @@ class InfoPlotter():
         mis: Dict[str, List[float]],
         errs: Dict[str, List[float]],
         labels: Dict[str, str],
-        short_names: bool=True,
-        rotation: int=90,
-        bottom_val: Optional[float]=None,
-        show_legend: bool=False,
-        fontsize: int=24
+        short_names: bool = True,
+        rotation: int = 90,
+        bottom_val: Optional[float] = None,
+        show_legend: bool = False,
+        fontsize: int = 24,
     ) -> Axes:
         """
         TODO
@@ -204,21 +225,46 @@ class InfoPlotter():
         for i, key in enumerate(keys):
             if i == 0:
                 barlist_0_default = ax.bar(
-                    idx_default, [mis[key][i] for i in idx_default], width=width,
-                    color=self.default_color, edgecolor="black"
+                    idx_default,
+                    [mis[key][i] for i in idx_default],
+                    width=width,
+                    color=self.default_color,
+                    edgecolor="black",
                 )
                 barlist_0_alt = ax.bar(
-                    idx_alt, [mis[key][i] for i in idx_alt], width=width,
-                    color=self.alt_color, edgecolor="black"
+                    idx_alt,
+                    [mis[key][i] for i in idx_alt],
+                    width=width,
+                    color=self.alt_color,
+                    edgecolor="black",
                 )
-                ax.errorbar(np.arange(len(mis[key])), mis[key], yerr=errs[key], fmt='none', capsize=capsize, color='tab:red', linewidth=1.5)
+                ax.errorbar(
+                    np.arange(len(mis[key])),
+                    mis[key],
+                    yerr=errs[key],
+                    fmt="none",
+                    capsize=capsize,
+                    color="tab:red",
+                    linewidth=1.5,
+                )
             else:
                 barlist_1 = ax.bar(
-                    list(range(len(mis[key]))), mis[key], width=width,
-                    color="none", label=labels[key],
-                    edgecolor="black", hatch="/",
+                    list(range(len(mis[key]))),
+                    mis[key],
+                    width=width,
+                    color="none",
+                    label=labels[key],
+                    edgecolor="black",
+                    hatch="/",
                 )
-                ax.errorbar(np.arange(len(mis[key])), mis[key], yerr=errs[key], fmt='none', capsize=capsize, color='black')
+                ax.errorbar(
+                    np.arange(len(mis[key])),
+                    mis[key],
+                    yerr=errs[key],
+                    fmt="none",
+                    capsize=capsize,
+                    color="black",
+                )
 
         for barlist in (barlist_0_default, barlist_0_alt, barlist_1):
             for b in barlist:
@@ -226,17 +272,26 @@ class InfoPlotter():
 
         if bottom_val is not None:
             plt.ylim([bottom_val, None])
-            
+
         # plt.ylim(np.min(mis[keys[-1]]))
 
-        ha = "center" if rotation%90 == 0 else "right"
-        rotation_mode = "default" if rotation%90 == 0 else "anchor"
+        ha = "center" if rotation % 90 == 0 else "right"
+        rotation_mode = "default" if rotation % 90 == 0 else "anchor"
         ax.set_xticks(np.arange(len(lines)))
-        ax.set_xticklabels(["$"+self.lines_comb_formatter(l, short=short_names)+"$" for l in lines], rotation=rotation, fontsize=fontsize, ha=ha, rotation_mode=rotation_mode)
+        ax.set_xticklabels(
+            [
+                "$" + self.lines_comb_formatter(l, short=short_names) + "$"
+                for l in lines
+            ],
+            rotation=rotation,
+            fontsize=fontsize,
+            ha=ha,
+            rotation_mode=rotation_mode,
+        )
         plt.yticks(fontsize=fontsize)
 
         # ax.set_xlabel('Integrated molecular lines', labelpad=24)
-        ax.set_ylabel('Mutual information (bits)', labelpad=24, fontsize=fontsize)
+        ax.set_ylabel("Mutual information (bits)", labelpad=24, fontsize=fontsize)
 
         # define a handler for the MulticolorPatch object
         from matplotlib.collections import PatchCollection
@@ -250,16 +305,22 @@ class InfoPlotter():
                 width, height = handlebox.width, handlebox.height
                 patches = []
                 for i, c in enumerate(orig_handle.colors):
-                    patches.append(plt.Rectangle([width/len(orig_handle.colors) * i - handlebox.xdescent, 
-                                                -handlebox.ydescent],
-                                width / len(orig_handle.colors),
-                                height, 
-                                facecolor=c, 
-                                edgecolor='black',
-                                linewidth=1.5
-                    ))
+                    patches.append(
+                        plt.Rectangle(
+                            [
+                                width / len(orig_handle.colors) * i
+                                - handlebox.xdescent,
+                                -handlebox.ydescent,
+                            ],
+                            width / len(orig_handle.colors),
+                            height,
+                            facecolor=c,
+                            edgecolor="black",
+                            linewidth=1.5,
+                        )
+                    )
 
-                patch = PatchCollection(patches,match_original=True)
+                patch = PatchCollection(patches, match_original=True)
 
                 handlebox.add_artist(patch)
                 return patch
@@ -273,21 +334,19 @@ class InfoPlotter():
             ax.legend(
                 h,
                 list(labels.values()),
-                fontsize=fontsize, loc="upper right",
-                handler_map={MulticolorPatch: MulticolorPatchHandler()}, 
+                fontsize=fontsize,
+                loc="upper right",
+                handler_map={MulticolorPatch: MulticolorPatchHandler()},
             )
 
         return ax
-
 
     # MI plots (continuous)
 
     def plot_mi_profile():
         pass
 
-    def plot_mi_profile_comparison(
-        self
-    ):
+    def plot_mi_profile_comparison(self):
         pass
 
     def plot_mi_map(
@@ -295,10 +354,10 @@ class InfoPlotter():
         xticks: np.ndarray,
         yticks: np.ndarray,
         mat: np.ndarray,
-        vmax: Optional[float]=None,
-        cmap: str="jet",
-        paramx: Optional[str]=None,
-        paramy: Optional[str]=None
+        vmax: Optional[float] = None,
+        cmap: str = "jet",
+        paramx: Optional[str] = None,
+        paramy: Optional[str] = None,
     ):
         ax = plt.gca()
 
@@ -306,11 +365,11 @@ class InfoPlotter():
 
         im = ax.pcolor(X, Y, mat, cmap=cmap, vmin=0, vmax=vmax)
 
-        cbar = plt.colorbar(im, ax=ax) # fig.colorbar(...)
+        cbar = plt.colorbar(im, ax=ax)  # fig.colorbar(...)
         cbar.set_label("Amount of information (bits)", labelpad=10)
 
-        ax.set_xscale('log')
-        ax.set_yscale('log')
+        ax.set_xscale("log")
+        ax.set_yscale("log")
 
         ax.set_xlabel(f"${self.param_formatter(paramx)}$")
         ax.set_ylabel(f"${self.param_formatter(paramy)}$")
@@ -319,18 +378,27 @@ class InfoPlotter():
 
     def plot_mi_map_comparison(
         self,
-        xticks: np.ndarray, yticks: np.ndarray,
-        mat1: np.ndarray, mat2: np.ndarray, diff: bool,
-        title1: str, title2: str, titlediff: Optional[str]=None,
-        vmax: Optional[float]=None, cmap: str="jet", cmapdiff: str="magma",
-        params: Optional[List[str]]=None, lines: Optional[List[str]]=None,
-        paramx: Optional[str]=None, paramy: Optional[str]=None
+        xticks: np.ndarray,
+        yticks: np.ndarray,
+        mat1: np.ndarray,
+        mat2: np.ndarray,
+        diff: bool,
+        title1: str,
+        title2: str,
+        titlediff: Optional[str] = None,
+        vmax: Optional[float] = None,
+        cmap: str = "jet",
+        cmapdiff: str = "magma",
+        params: Optional[List[str]] = None,
+        lines: Optional[List[str]] = None,
+        paramx: Optional[str] = None,
+        paramy: Optional[str] = None,
     ):
         if diff:
-            fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(3*6.4, 4.8), dpi=125)
+            fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(3 * 6.4, 4.8), dpi=125)
             matdiff = mat1 - mat2
         else:
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(2*6.4, 4.8), dpi=125)
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(2 * 6.4, 4.8), dpi=125)
 
         X, Y = np.meshgrid(xticks, yticks)
 
@@ -346,10 +414,13 @@ class InfoPlotter():
             cbar = fig.colorbar(im, ax=[ax3])
             cbar.set_label("Amount of information (bits)", labelpad=10)
 
-        ax1.set_xscale('log'); ax1.set_yscale('log')
-        ax2.set_xscale('log'); ax2.set_yscale('log')
+        ax1.set_xscale("log")
+        ax1.set_yscale("log")
+        ax2.set_xscale("log")
+        ax2.set_yscale("log")
         if diff:
-            ax3.set_xscale('log'); ax3.set_yscale('log')
+            ax3.set_xscale("log")
+            ax3.set_yscale("log")
 
         ax1.set_xlabel(f"${self.param_formatter(paramx)}$")
         ax1.set_ylabel(f"${self.param_formatter(paramy)}$")
@@ -371,7 +442,6 @@ class InfoPlotter():
         if diff:
             return fig, (ax1, ax2, ax3)
         return fig, (ax1, ax2)
-
 
     # Summaries
 
@@ -399,7 +469,9 @@ class InfoPlotter():
         dpi = 200
         ###
 
-        fig, ax = plt.subplots(1, 1, figsize = (xscale*6.4, 0.5*yscale*4.8), dpi=dpi)
+        fig, ax = plt.subplots(
+            1, 1, figsize=(xscale * 6.4, 0.5 * yscale * 4.8), dpi=dpi
+        )
 
         # Checking
         if isinstance(parameters, str):
@@ -411,22 +483,17 @@ class InfoPlotter():
         for val in regimes[param_regime].values():
             if val is None or val[0] is None:
                 continue
-            ax.axvline(len(x)+1, color='black')
-            
-            if param_regime in ["g0"]: # TODO
+            ax.axvline(len(x) + 1, color="black")
+
+            if param_regime in ["g0"]:  # TODO
                 x.append(f"${expformat(val[0])}$")
             else:
                 x.append(f"${val[0]}$")
             if val[1] is None:
                 x.append("$+\\infty$")
-        
+
         # Static settings
-        fontsizes = {
-            1: 13,
-            2: 10,
-            3: 10,
-            4: 10
-        }
+        fontsizes = {1: 13, 2: 10, 3: 10, 4: 10}
 
         # Plot names and confidences
         cmap = plt.get_cmap("gist_rainbow")
@@ -440,9 +507,7 @@ class InfoPlotter():
                 c = list(c)
                 sign = [None] * len(l)
 
-                ax.add_patch(
-                    Rectangle((i, 0), 1, 1, color=subcmap(c[0]), alpha=0.4)
-                )
+                ax.add_patch(Rectangle((i, 0), 1, 1, color=subcmap(c[0]), alpha=0.4))
                 for k, _ in enumerate(c):
                     _c = 100 * c[k]
                     if _c > 99.9:
@@ -453,28 +518,27 @@ class InfoPlotter():
                         _sign = "="
                     c[k], sign[k] = _c, _sign
                 ax.text(
-                    i+0.5, 0.5,
-                    '\n\n'.join([
-                        f"${self.lines_comb_formatter(_l, short=True)}$\n$p {_sign} {_c:.1f}\%$"\
+                    i + 0.5,
+                    0.5,
+                    "\n\n".join(
+                        [
+                            f"${self.lines_comb_formatter(_l, short=True)}$\n$p {_sign} {_c:.1f}\%$"
                             for _l, _c, _sign in zip(l, c, sign)
-                    ]),
+                        ]
+                    ),
                     horizontalalignment="center",
                     verticalalignment="center",
-                    fontsize=fontsizes[len(l)]
+                    fontsize=fontsizes[len(l)],
                 )
             else:
-                ax.add_patch(
-                    Rectangle((i, 0), 1, 1, color="gray", alpha=0.6)
-                )
-                ax.add_patch(
-                    Rectangle((i, 0), 1, 1, fill=False, hatch="//")
-                )
+                ax.add_patch(Rectangle((i, 0), 1, 1, color="gray", alpha=0.6))
+                ax.add_patch(Rectangle((i, 0), 1, 1, fill=False, hatch="//"))
 
         # Settings
-        ax.set_xticks(np.arange(1, len(x)+1))
+        ax.set_xticks(np.arange(1, len(x) + 1))
         ax.set_yticks([])
         ax.set_xticklabels(x)
-        ax.set_xlabel("$"+self.param_formatter(param_regime)+"$", labelpad=10)
+        ax.set_xlabel("$" + self.param_formatter(param_regime) + "$", labelpad=10)
         ax.set_xlim([1, len(x)])
         ax.set_ylim([0, 1])
 
@@ -493,7 +557,7 @@ class InfoPlotter():
         dpi = 200
         ###
 
-        fig, ax = plt.subplots(1, 1, figsize = (xscale*6.4, yscale*4.8), dpi=dpi)
+        fig, ax = plt.subplots(1, 1, figsize=(xscale * 6.4, yscale * 4.8), dpi=dpi)
 
         # Checking
         if isinstance(parameters, str):
@@ -505,14 +569,14 @@ class InfoPlotter():
         for val in regimes[param_regime_1].values():
             if val is None or val[0] is None:
                 continue
-            ax.axvline(len(x)+1, color='black')
+            ax.axvline(len(x) + 1, color="black")
             x.append(f"${val[0]}$")
             if val[1] is None:
                 x.append("$+\\infty$")
         for val in regimes[param_regime_2].values():
             if val is None or val[0] is None:
                 continue
-            ax.axhline(len(y)+1, color='black')
+            ax.axhline(len(y) + 1, color="black")
             y.append(f"${expformat(val[0])}$")
             if val[1] is None:
                 y.append("$+\\infty$")
@@ -522,15 +586,10 @@ class InfoPlotter():
             1: [(0.5, 0.5)],
             2: [(0.5, 0.7), (0.5, 0.3)],
             3: [(0.5, 0.7), (0.25, 0.3), (0.75, 0.3)],
-            4: [(0.25, 0.7), (0.75, 0.7), (0.25, 0.3), (0.75, 0.3)]
+            4: [(0.25, 0.7), (0.75, 0.7), (0.25, 0.3), (0.75, 0.3)],
         }
-        fontsizes = {
-            1: 13,
-            2: 10,
-            3: 8,
-            4: 8
-        }
-        
+        fontsizes = {1: 13, 2: 10, 3: 8, 4: 8}
+
         # Plot names and confidences
         cmap = plt.get_cmap("gist_rainbow")
         subcmap = truncate_colormap(cmap, 0.0, 0.35)
@@ -544,7 +603,7 @@ class InfoPlotter():
                     c = (c,)
 
                 ax.add_patch(
-                    Rectangle((i+1, j+1), 1, 1, color=subcmap(c[0]), alpha=0.4)
+                    Rectangle((i + 1, j + 1), 1, 1, color=subcmap(c[0]), alpha=0.4)
                 )
                 for k, _ in enumerate(l):
                     _c = 100 * c[k]
@@ -555,30 +614,27 @@ class InfoPlotter():
                     else:
                         _sign = "="
                     _l = l[k]
-                
+
                     i0, j0 = coords[len(l)][k]
                     ax.text(
-                        i+1+i0, j+1+j0,
+                        i + 1 + i0,
+                        j + 1 + j0,
                         f"${self.lines_comb_formatter(_l, short=True)}$\n$p {_sign} {_c:.1f}\%$",
                         horizontalalignment="center",
                         verticalalignment="center",
-                        fontsize=fontsizes[len(l)]
+                        fontsize=fontsizes[len(l)],
                     )
             else:
-                ax.add_patch(
-                    Rectangle((i+1, j+1), 1, 1, color="gray", alpha=0.6)
-                )
-                ax.add_patch(
-                    Rectangle((i+1, j+1), 1, 1, fill=False, hatch="//")
-                )
+                ax.add_patch(Rectangle((i + 1, j + 1), 1, 1, color="gray", alpha=0.6))
+                ax.add_patch(Rectangle((i + 1, j + 1), 1, 1, fill=False, hatch="//"))
 
         # Settings
-        ax.set_xticks(np.arange(1, len(x)+1))
-        ax.set_yticks(np.arange(1, len(y)+1))
+        ax.set_xticks(np.arange(1, len(x) + 1))
+        ax.set_yticks(np.arange(1, len(y) + 1))
         ax.set_xticklabels(x)
         ax.set_yticklabels(y)
-        ax.set_xlabel("$"+self.param_formatter(param_regime_1)+"$", labelpad=10)
-        ax.set_ylabel("$"+self.param_formatter(param_regime_2)+"$", labelpad=10)
+        ax.set_xlabel("$" + self.param_formatter(param_regime_1) + "$", labelpad=10)
+        ax.set_ylabel("$" + self.param_formatter(param_regime_2) + "$", labelpad=10)
         ax.set_xlim([1, len(x)])
         ax.set_ylim([1, len(y)])
 
@@ -587,9 +643,7 @@ class InfoPlotter():
     # Helpers
 
     def lines_comb_formatter(
-        self,
-        lines: Union[List[str], str],
-        short: bool=False
+        self, lines: Union[List[str], str], short: bool = False
     ) -> str:
         """
         Returns a printable latex version of the combination of lines `lines`.
@@ -603,13 +657,9 @@ class InfoPlotter():
         # if len(lines) == 1:
         #     return self.line_formatter(lines[0], short=short)
         # return r"\left(" + ','.join([self.line_formatter(line, short=short) for line in lines]) + r"\right)"
-        return ','.join([self.line_formatter(line, short=short) for line in lines])
+        return ",".join([self.line_formatter(line, short=short) for line in lines])
 
-
-    def params_comb_formatter(
-        self,
-        params: Union[List[str], str]
-    ) -> str:
+    def params_comb_formatter(self, params: Union[List[str], str]) -> str:
         """
         Returns a printable latex version of the combination of physical parameters `params`.
         If the combination has only one element, it is treated as a single parameter.
@@ -621,14 +671,18 @@ class InfoPlotter():
 
         if len(params) == 1:
             return self.param_formatter(params[0])
-        return r"\left(" + ','.join([self.param_formatter(param) for param in params]) + r"\right)"
+        return (
+            r"\left("
+            + ",".join([self.param_formatter(param) for param in params])
+            + r"\right)"
+        )
 
     def regime_formatter(
         self,
         param_name: str,
         reg: Optional[Tuple[Optional[float], Optional[float]]],
-        lower_bound: Optional[float]=0,
-        upper_bound: Optional[float]=None
+        lower_bound: Optional[float] = 0,
+        upper_bound: Optional[float] = None,
     ) -> str:
         lb = "-\infty" if lower_bound is None else expformat(lower_bound)
         ub = "+\infty" if upper_bound is None else expformat(upper_bound)
