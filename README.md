@@ -17,8 +17,8 @@ To install `infobs`:
 Step 1: Create a virtual environment and activate it:
 
 ```shell
-python -m venv venv
-source venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 ```
 
 Step 2 : install with pip:
@@ -27,16 +27,16 @@ Step 2 : install with pip:
 pip install -e .
 ```
 
-**Note :** to deactivate the virtual env :
+**Note 1:** to deactivate the virtual env :
 
 ```shell
 deactivate
 ```
 
-To delete the virtual environment:
+**Note 2:**To delete the virtual environment:
 
 ```shell
-rm -r venv
+rm -r .venv
 ```
 
 ## Get started
@@ -48,7 +48,7 @@ To get started, check out the jupyter notebooks presented in the `examples` fold
 To test, run:
 
 ```shell
-python -m pytest && coverage-badge -o coverage.svg
+python -m pytest && coverage-badge -o coverage.svg -f
 ```
 
 ## Associated packages

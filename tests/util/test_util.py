@@ -1,8 +1,4 @@
-import os
-import sys
 import unittest
-
-sys.path.insert(0, os.path.join("../.."))
 
 from infobs.util import util
 
