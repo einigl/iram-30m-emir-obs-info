@@ -11,17 +11,20 @@ __all__ = ["Simulator"]
 
 
 class Simulator:
-    """a class to generate synthetic observations of an environment"""
+    """
+    A class to generate synthetic observations of an environment.
+    """
 
     def __init__(self, instrument: Instrument):
-        self.model = MeudonPDR()
+        self.model = MeudonPDR(instrument.kelvin)
         self.instrument = instrument
 
     @staticmethod
     def params_sampling(
         n_samples: int, samplers: Dict[str, Sampler], seed: Optional[int] = None
     ) -> pd.DataFrame:
-        """simulates `n_samples` samples of physical parameter vectors from the probability distributions set in `samplers`
+        """
+        Simulates `n_samples` samples of physical parameter vectors from the probability distributions set in `samplers`
 
         Parameters
         ----------
@@ -76,7 +79,7 @@ class Simulator:
         pd.DataFrame
             dataframe containing the sampled physical parameters and the associated predicted integrated intensities
         """
-        MeudonPDR.check_parameters(list(samplers.keys()))
+        MeudonPDR._check_parameters(pd.DataFrame(columns=list(samplers.keys())))
 
         # Parameters sampling
         df_params = self.params_sampling(n_samples, samplers, seed=seed)

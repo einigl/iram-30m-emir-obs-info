@@ -1,9 +1,10 @@
 import os
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional, Union
 
 import pandas as pd
 
-from ...graphics import latex
+# from ...graphics import latex
+from ...model import MeudonPDR
 from ..instrument import StandardInstrument
 from . import _display
 
@@ -78,33 +79,85 @@ class IRAM30mEMIR(StandardInstrument):
             "0.9mm": [277, 375],  # [277, 350]
         }
 
+    @staticmethod
+    def get_bands(lines: Optional[Union[str, List[str]]] = None):
+        """
+        TODO
+        """
+        single = isinstance(lines, str)
+        if single:
+            lines = [lines]
+        lines = lines or IRAM30mEMIR.all_lines()
+
+        assert set(lines) <= set(IRAM30mEMIR.all_lines())
+
+        emir_df = IRAM30mEMIR._get_table()
+        freqs = emir_df.loc[lines, "freq"].to_list()
+        emir_bands = IRAM30mEMIR.bands()
+
+        bands = [None] * len(lines)
+        for i, f in enumerate(freqs):
+            for b, (low, upp) in emir_bands.items():
+                if low <= f <= upp:
+                    bands[i] = b
+                    break
+
+        return bands[0] if single else bands
+
     def plot_band(
         self,
         band: Literal["3mm", "2mm", "1mm", "0.9mm", "all"],
         lines: List[str],
         obstime: Optional[float] = None,
-        short: bool = False,
+        transitions: bool = True,
+        rotation: int = 60,
+        rms_min: Optional[float] = None,
+        rms_max: Optional[float] = None,
+        min_gap: Optional[float] = None,
+        global_offset: Optional[float] = None,
+        fontsize=12,
+        lines_fontsize=10,
+        legend_fontsize=10,
     ):
         band = band.lower()
         assert band in ["3mm", "2mm", "1mm", "0.9mm", "all"]
 
-        emir_df = IRAM30mEMIR._get_table()
-
-        emir_lines = emir_df.index.to_list()
-        emir_freqs = emir_df["freq"].to_numpy()
+        emir_lines = IRAM30mEMIR.all_lines()
+        emir_freqs = MeudonPDR.frequencies(lines)
 
         lines = list(set(lines))  # Remove duplicates
         assert set(lines) <= set(
             emir_lines
         )  # Check that lines are observable with EMIR
-        freqs = emir_freqs[[line in lines for line in emir_lines]]
 
-        lines = [latex.remove_hyperfine(l) for l in lines]
+        # lines = [latex.remove_hyperfine(l) for l in lines]
 
         if band == "all":
-            return _display.plot_all_bands(freqs, obstime, self.ipwv)
+            return _display.plot_all_bands(
+                lines,
+                emir_freqs,
+                obstime,
+                self.ipwv,
+                rms_min,
+                rms_max,
+                fontsize,
+                legend_fontsize,
+            )
         return _display.plot_specific_band(
-            band, freqs, lines, obstime, self.ipwv, short
+            band,
+            lines,
+            emir_freqs,
+            obstime,
+            self.ipwv,
+            transitions,
+            rotation,
+            rms_min,
+            rms_max,
+            min_gap,
+            global_offset,
+            fontsize,
+            lines_fontsize,
+            legend_fontsize,
         )
 
     def __str__(self):

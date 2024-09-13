@@ -15,13 +15,13 @@ class Mixture(Sampler):
 
     def __init__(self, samplers: List[Sampler], weights: Optional[List[float]] = None):
         """
-
-        Parameters
-        ----------
-        samplers : List[Sampler]
-            list of probability distributions that are mixed
-        weights : Optional[List[float]], optional
-            selection probabilities for each sampler (if None, uniform selection probabilities are considered), by default None
+        Uniform
+                Parameters
+                ----------
+                samplers : List[Sampler]
+                    list of probability distributions that are mixed
+                weights : Optional[List[float]], optional
+                    selection probabilities for each sampler (if None, uniform selection probabilities are considered), by default None
         """
         assert all([isinstance(el, Sampler) for el in samplers])
         self.samplers = samplers

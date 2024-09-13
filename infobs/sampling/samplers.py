@@ -25,19 +25,6 @@ class Sampler(ABC):
         """
         pass
 
-    @abstractmethod
-    def copy_other_bounds(self, lower: float, upper: Optional[float] = None):
-        """generates a copy of the considered sampler with new lower and upper bounds
-
-        Parameters
-        ----------
-        lower : float
-            new lower bound
-        upper : Optional[float], optional
-            new upper bound, by default None
-        """
-        pass
-
 
 class Constant(Sampler):
     """simplest possible probability distribution: a Dirac at a given value"""

@@ -2,7 +2,7 @@ import shutil
 
 import matplotlib.pyplot as plt
 
-from ._ism_lines_helpers import (
+from ..util.ism_lines_helpers import (
     Settings,
     line_to_latex,
     molecule,
@@ -47,13 +47,13 @@ class LaTeX:
         plt.rc("text", usetex=self.previous_mode)
 
 
-def latex_line(line: str, short: bool = False) -> str:
+def latex_line(line: str, transition: bool = True) -> str:
     """Returns a printable LaTeX version of the line `line_name` (without degenerate energy levels).
-    If `short` is True, the transition is indicated, else it isn't."""
+    If `transition` is True, the transition is indicated, else it isn't."""
 
-    if short:
-        return molecule_to_latex(molecule(line))
-    return line_to_latex(remove_hyperfine(line))
+    if transition:
+        return line_to_latex(remove_hyperfine(line))
+    return molecule_to_latex(molecule(line))
 
 
 def latex_param(param: str) -> str:

@@ -34,7 +34,3 @@ class TestUtil(unittest.TestCase):
             util.integrate_noise(rsm, 100, 1.0), 10 * rsm, delta=1e-8
         )
         self.assertAlmostEqual(util.integrate_noise(rsm, 1, 4.0), 4.0 * rsm, delta=1e-8)
-
-
-if __name__ == "__main__":
-    unittest.main()

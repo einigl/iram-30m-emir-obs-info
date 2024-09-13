@@ -1,4 +1,5 @@
 import os
+import warnings
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -9,6 +10,14 @@ from ..sampling.samplers import Constant, Sampler
 from ..util import erg_to_kelvin, g0_to_radm, radm_to_g0
 
 __all__ = ["MeudonPDR"]
+
+
+class ValidityDomainWarning(Warning):
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return repr(self.message)
 
 
 class MeudonPDR:
@@ -29,6 +38,8 @@ class MeudonPDR:
         kelvin : bool, optional
             if True, predicted integrated intensities are expressed in K * km / s. Otherwise, they are expressed in erg cm-2 s-1 sr-1, by default True
         """
+        if not isinstance(kelvin, bool):
+            raise TypeError(f"kelvin must be a boolean, not {type(kelvin)}")
         self.kelvin = kelvin
 
         # Load neural network
@@ -46,8 +57,26 @@ class MeudonPDR:
         self.full_df = self.full_df.dropna(axis=0)
 
     @staticmethod
-    def check_parameters(parameters: List[str]) -> None:
-        assert set(parameters) == {"Av", "G0", "Pth", "angle"}
+    def _check_parameters(df_params: pd.DataFrame) -> None:
+        if not isinstance(df_params, pd.DataFrame):
+            raise TypeError(f"df_params must be a DataFrame, not {type(df_params)}")
+
+        params = df_params.columns.to_list()
+        if set(params) != {"Av", "G0", "Pth", "angle"}:
+            raise ValueError(
+                f"Input parameters must be [Av, G0, Pth, angle], not {params}"
+            )
+
+        if any(
+            [
+                not df_params.loc[:, p].between(a, b).all()
+                for p, (a, b) in MeudonPDR.bounds.items()
+            ]
+        ):
+            warnings.warn(
+                "Input parameters must fall within the model's validity domain. See `MeudonPDR.bounds` for the limits of the validity domain.",
+                ValidityDomainWarning,
+            )
 
     def predict(
         self,
@@ -66,7 +95,7 @@ class MeudonPDR:
         lines : Optional[List[str]], optional
             list of lines to prodict (if None, all lines are predicted), by default None
         kappa : Sampler, optional
-            scaling factor that includes e.g., beam dilution, by default Constant(1.)
+            scaling factor that includes, e.g., beam dilution, by default Constant(1.)
 
         Returns
         -------
@@ -80,7 +109,7 @@ class MeudonPDR:
         self.net.restrict_to_output_subset(lines)
 
         # Use the appropriate names for the network
-        self.check_parameters(df_params.columns.to_list())
+        self._check_parameters(df_params)
 
         df_params_net = df_params.rename(
             columns={"Av": "Avmax", "G0": "radm", "Pth": "P", "angle": "angle"}
@@ -132,5 +161,7 @@ class MeudonPDR:
 
     @staticmethod
     def frequencies(lines: List[str]) -> Dict[str, float]:
+        if not isinstance(lines, (List, Tuple)):
+            raise TypeError(f"lines must be a list, not {type(lines)}")
         full_df = MeudonPDR._get_table()
         return {line: full_df.loc[line, "freq"] for line in lines}

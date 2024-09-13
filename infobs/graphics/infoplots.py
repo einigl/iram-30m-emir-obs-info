@@ -26,13 +26,13 @@ class InfoPlotter:
         c = to_rgba("tab:blue")
         self.default_color = (c[0], c[1], c[2], 0.6)
 
-        c = to_rgba("tab:green")
+        c = to_rgba("tab:orange")
         self.alt_color = (c[0], c[1], c[2], 0.6)
 
     # Probability plots
 
     def plot_prob_bar(
-        self, lines: List[str], probs: List[float], short_names: bool = True
+        self, lines: List[str], probs: List[float], transitions: bool = True
     ) -> Figure:
         ###
         dpi = 200
@@ -50,7 +50,7 @@ class InfoPlotter:
         ax.set_xticks(np.arange(len(probs)))
         ax.set_xticklabels(
             [
-                "$" + self.lines_comb_formatter(l, short=short_names) + "$"
+                "$" + self.lines_comb_formatter(l, transition=transitions) + "$"
                 for l in lines
             ],
             rotation=45,
@@ -73,19 +73,16 @@ class InfoPlotter:
         colors: Optional[List[str]] = None,
         sort: bool = False,
         nfirst: Optional[int] = None,
-        short_names: bool = False,
+        transitions: bool = True,
         rotation: int = 90,
+        fontsize: int = 20,
+        capsize: int = 8,
+        barwidth: float = 0.6,
         bottom_val: Optional[float] = None,
     ) -> Axes:
         """
         TODO
         """
-        ###
-        width = 0.6
-        capsize = 8
-        fontsize = 20
-        ###
-
         assert len(mis) == len(lines)
         assert sort or (nfirst is None)
 
@@ -104,7 +101,7 @@ class InfoPlotter:
         barlist = ax.bar(
             np.arange(len(mis)),
             mis,
-            width=width,
+            width=barwidth,
             color=self.default_color,
             edgecolor="black",
         )
@@ -132,7 +129,7 @@ class InfoPlotter:
         ax.set_xticks(np.arange(len(mis)))
         ax.set_xticklabels(
             [
-                "$" + self.lines_comb_formatter(l, short=short_names) + "$"
+                "$" + self.lines_comb_formatter(l, transition=transitions) + "$"
                 for l in lines
             ],
             rotation=rotation,
@@ -142,10 +139,22 @@ class InfoPlotter:
         )
         plt.yticks(fontsize=fontsize)
 
-        if bottom_val is not None:
-            plt.ylim([bottom_val, None])
+        if errs is None:
+            low = np.nanmin(mis)
+            high = np.nanmax(mis)
+        else:
+            low = np.nanmin(np.array(mis) - np.array(errs))
+            high = np.nanmax(np.array(mis) + np.array(errs))
+        diff = high - low
+        frac = 0.1
 
-        # ax.set_xlabel('Integrated molecular lines', labelpad=24)
+        plt.ylim(
+            [
+                low - frac * diff if bottom_val is None else bottom_val,
+                high + frac * diff,
+            ]
+        )
+
         ax.set_ylabel("Mutual information (bits)", labelpad=24, fontsize=fontsize)
 
         return ax
@@ -155,7 +164,7 @@ class InfoPlotter:
         lines: List[str],
         mis: List[List[float]],
         show_diag: bool = True,
-        short_names: bool = True,
+        transitions: bool = True,
     ) -> Figure:
         ###
         cmap = "OrRd"
@@ -177,14 +186,14 @@ class InfoPlotter:
         ax.set_xticks(np.arange(mis.shape[0]))
         ax.set_yticks(np.arange(mis.shape[0]))
         ax.set_xticklabels(
-            ["$" + self.line_formatter(l, short=short_names) + "$" for l in lines],
+            ["$" + self.line_formatter(l, transition=transitions) + "$" for l in lines],
             rotation=45,
             ha="right",
             rotation_mode="anchor",
             fontsize=10,
         )
         ax.set_yticklabels(
-            ["$" + self.line_formatter(l, short=short_names) + "$" for l in lines],
+            ["$" + self.line_formatter(l, transition=transitions) + "$" for l in lines],
             rotation=45,
             ha="right",
             rotation_mode="anchor",
@@ -199,22 +208,19 @@ class InfoPlotter:
         self,
         lines: List[str],
         mis: Dict[str, List[float]],
-        errs: Dict[str, List[float]],
+        errs: Optional[Dict[str, List[float]]],
         labels: Dict[str, str],
-        short_names: bool = True,
+        transitions: bool = True,
         rotation: int = 90,
         bottom_val: Optional[float] = None,
         show_legend: bool = False,
-        fontsize: int = 24,
+        fontsize: int = 20,
+        capsize: int = 8,
+        barwidth: float = 0.6,
     ) -> Axes:
         """
         TODO
         """
-        ###
-        width = 0.6
-        capsize = 10
-        ###
-
         ax = plt.gca()
 
         alt = ["el" in "_".join(l) for l in lines]
@@ -227,14 +233,14 @@ class InfoPlotter:
                 barlist_0_default = ax.bar(
                     idx_default,
                     [mis[key][i] for i in idx_default],
-                    width=width,
+                    width=barwidth,
                     color=self.default_color,
                     edgecolor="black",
                 )
                 barlist_0_alt = ax.bar(
                     idx_alt,
                     [mis[key][i] for i in idx_alt],
-                    width=width,
+                    width=barwidth,
                     color=self.alt_color,
                     edgecolor="black",
                 )
@@ -251,7 +257,7 @@ class InfoPlotter:
                 barlist_1 = ax.bar(
                     list(range(len(mis[key]))),
                     mis[key],
-                    width=width,
+                    width=barwidth,
                     color="none",
                     label=labels[key],
                     edgecolor="black",
@@ -273,14 +279,12 @@ class InfoPlotter:
         if bottom_val is not None:
             plt.ylim([bottom_val, None])
 
-        # plt.ylim(np.min(mis[keys[-1]]))
-
         ha = "center" if rotation % 90 == 0 else "right"
         rotation_mode = "default" if rotation % 90 == 0 else "anchor"
         ax.set_xticks(np.arange(len(lines)))
         ax.set_xticklabels(
             [
-                "$" + self.lines_comb_formatter(l, short=short_names) + "$"
+                "$" + self.lines_comb_formatter(l, transition=transitions) + "$"
                 for l in lines
             ],
             rotation=rotation,
@@ -290,10 +294,28 @@ class InfoPlotter:
         )
         plt.yticks(fontsize=fontsize)
 
-        # ax.set_xlabel('Integrated molecular lines', labelpad=24)
         ax.set_ylabel("Mutual information (bits)", labelpad=24, fontsize=fontsize)
 
-        # define a handler for the MulticolorPatch object
+        if errs is None:
+            low = min([np.nanmin(mis[name]) for name in mis])
+            high = max([np.nanmax(mis[name]) for name in mis])
+        else:
+            low = min(
+                [np.nanmin(np.array(mis[name]) - np.array(errs[name])) for name in mis]
+            )
+            high = max(
+                [np.nanmax(np.array(mis[name]) + np.array(errs[name])) for name in mis]
+            )
+        diff = high - low
+        frac = 0.1
+
+        plt.ylim(
+            [
+                low - frac * diff if bottom_val is None else bottom_val,
+                high + frac * diff,
+            ]
+        )
+
         from matplotlib.collections import PatchCollection
 
         class MulticolorPatch(object):
@@ -329,7 +351,6 @@ class InfoPlotter:
         h.append(MulticolorPatch([self.default_color, self.alt_color]))
         h.append(barlist_1)
 
-        # ------ create the legend
         if show_legend:
             ax.legend(
                 h,
@@ -343,11 +364,14 @@ class InfoPlotter:
 
     # MI plots (continuous)
 
-    def plot_mi_profile():
-        pass
+    def plot_mi_profile(self):
+        raise NotImplementedError("TODO")
 
     def plot_mi_profile_comparison(self):
-        pass
+        raise NotImplementedError("TODO")
+
+    def plot_mi_profiles_summary(self):
+        raise NotImplementedError("TODO")
 
     def plot_mi_map(
         self,
@@ -443,6 +467,9 @@ class InfoPlotter:
             return fig, (ax1, ax2, ax3)
         return fig, (ax1, ax2)
 
+    def plot_mi_maps_summary(self):
+        raise NotImplementedError("TODO")
+
     # Summaries
 
     def plot_summary_1d(
@@ -522,7 +549,7 @@ class InfoPlotter:
                     0.5,
                     "\n\n".join(
                         [
-                            f"${self.lines_comb_formatter(_l, short=True)}$\n$p {_sign} {_c:.1f}\%$"
+                            f"${self.lines_comb_formatter(_l, transition=True)}$\n$p {_sign} {_c:.1f}\%$"
                             for _l, _c, _sign in zip(l, c, sign)
                         ]
                     ),
@@ -619,7 +646,7 @@ class InfoPlotter:
                     ax.text(
                         i + 1 + i0,
                         j + 1 + j0,
-                        f"${self.lines_comb_formatter(_l, short=True)}$\n$p {_sign} {_c:.1f}\%$",
+                        f"${self.lines_comb_formatter(_l, transition=True)}$\n$p {_sign} {_c:.1f}\%$",
                         horizontalalignment="center",
                         verticalalignment="center",
                         fontsize=fontsizes[len(l)],
@@ -643,7 +670,7 @@ class InfoPlotter:
     # Helpers
 
     def lines_comb_formatter(
-        self, lines: Union[List[str], str], short: bool = False
+        self, lines: Union[List[str], str], transition: bool = True
     ) -> str:
         """
         Returns a printable latex version of the combination of lines `lines`.
@@ -655,9 +682,11 @@ class InfoPlotter:
             lines = [lines]
 
         # if len(lines) == 1:
-        #     return self.line_formatter(lines[0], short=short)
-        # return r"\left(" + ','.join([self.line_formatter(line, short=short) for line in lines]) + r"\right)"
-        return ",".join([self.line_formatter(line, short=short) for line in lines])
+        #     return self.line_formatter(lines[0], transition=transitions)
+        # return r"\left(" + ','.join([self.line_formatter(line, transition=transitions) for line in lines]) + r"\right)"
+        return ",".join(
+            [self.line_formatter(line, transition=transition) for line in lines]
+        )
 
     def params_comb_formatter(self, params: Union[List[str], str]) -> str:
         """

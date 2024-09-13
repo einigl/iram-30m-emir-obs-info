@@ -435,7 +435,8 @@ class PDRPlotter:
 
             if legend:
                 leg = plt.legend(fontsize=fontsize, handletextpad=-2.0, loc=legend_loc)
-                for item in leg.legendHandles:
+                # for item in leg.legendHandles:
+                for item in leg.legend_handles:
                     item.set_visible(False)
 
             plt.gca().tick_params(axis="both", labelsize=fontsize)

@@ -1,6 +1,6 @@
 import itertools as itt
 from math import ceil
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Dict, Iterable, List, Literal, Optional, Union
 
 import infovar
 import numpy as np
@@ -67,17 +67,27 @@ class Infobs:
         self.plotter = InfoPlotter(latex_line, latex_param)
 
     def set_path(self, save_path: str) -> None:
-        self.discrete_handler.set_paths(save_path)
-        self.continuous_handler.set_paths(save_path)
+        self.discrete_handler.set_path(save_path)
+        self.continuous_handler.set_path(save_path)
 
     def set_regimes(self, regimes: Dict[str, Dict]) -> None:
         self.discrete_handler.set_restrictions(regimes)
 
-    def reset(self) -> None:
+    def reset(
+        self, type: Literal["none", "discrete", "continuous", "both"] = "none"
+    ) -> None:
         """Reset every data saved at the current path. Must be used carefully."""
         raise NotImplementedError("TODO")
 
-    def compute_info(self) -> None:  # TODO
+    def compute_info(self) -> None:
+        raise NotImplementedError("TODO")
+
+    def get_discrete_max(
+        self,
+        lines_iterable: Iterable[List[str]],
+        parameters: Union[str, List[str]],
+        regime: str,
+    ) -> float:
         raise NotImplementedError("TODO")
 
     def plot_info_bars(
@@ -88,7 +98,7 @@ class Infobs:
         errorbars: bool = True,
         sort: bool = True,
         nfirst: Optional[int] = None,
-        display_transitions: bool = True,
+        transitions: bool = True,
         bottom_val: Optional[float] = None,
         progress_bar: bool = False,
     ):
@@ -135,7 +145,7 @@ class Infobs:
             errs=stds,
             sort=sort,
             nfirst=nfirst,
-            short_names=not display_transitions,
+            transitions=transitions,
             bottom_val=bottom_val,
         )
 
@@ -147,7 +157,7 @@ class Infobs:
         parameters: Union[str, List[str]],
         restriction: str,
         show_diag: bool = False,
-        display_transitions: bool = True,
+        transitions: bool = True,
         progress_bar: bool = False,
     ):
         lines_iterable = list(lines_iterable)
@@ -187,7 +197,7 @@ class Infobs:
             lines_iterable,
             mis_mat,
             show_diag=show_diag,
-            short_names=not display_transitions,
+            transitions=transitions,
         )
 
         return ax
@@ -202,7 +212,7 @@ class Infobs:
         sort: bool = True,  # TODO
         nfirst: Optional[int] = None,  # TODO
         labels: Optional[List[str]] = None,
-        display_transitions: bool = True,
+        transitions: bool = True,
         bottom_val: Optional[float] = None,
         progress_bar: bool = False,
         fontsize: int = 24,
@@ -256,7 +266,7 @@ class Infobs:
             mis,
             stds,
             labels=labels,
-            short_names=not display_transitions,
+            transitions=transitions,
             bottom_val=bottom_val,
             show_legend=labels is not None,
             fontsize=fontsize,
@@ -299,19 +309,16 @@ class Infobs:
 
         self.continuous_handler.update(lines, parameters, inputs)
 
-    def get_info_maps_max(
+    def get_continuous_max(
         self,
         lines_iterable: Iterable[List[str]],
         parameters: Union[str, List[str]],
-        xaxis_param: str,
-        yaxis_param: str,
+        axis_params: Union[str, List[str]],
     ) -> float:
 
         l = []
         for lines in lines_iterable:
-            entry = self.continuous_handler.read(
-                lines, parameters, [xaxis_param, yaxis_param]
-            )
+            entry = self.continuous_handler.read(lines, parameters, axis_params)
             l.append(np.nanmax(entry["stats"]["mi"]["data"]))
 
         return np.nanmax(l)

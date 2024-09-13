@@ -4,37 +4,37 @@ import numpy as np
 
 from infobs.sampling import samplers
 
-n = 10
-
 
 class TestConstant(unittest.TestCase):
-    def __init__(self, *args):
-        super().__init__(*args)
-        self.smp = samplers.Constant(0.0)
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.n = 10
+        cls.smp = samplers.Constant(0.0)
 
     def test_get(self):
-        self.assertListEqual(self.smp.get(n).tolist(), np.zeros(n).tolist())
+        self.assertListEqual(self.smp.get(self.n).tolist(), np.zeros(self.n).tolist())
 
     def test_copy_other_bounds(self):
         new_smp = self.smp.copy_other_bounds(1.0)
-        self.assertListEqual(new_smp.get(n).tolist(), np.ones(n).tolist())
+        self.assertListEqual(new_smp.get(self.n).tolist(), np.ones(self.n).tolist())
 
     def test_str(self):
         self.assertIsInstance(str(self.smp), str)
 
 
 class TestUniform(unittest.TestCase):
-    def __init__(self, *args):
-        super().__init__(*args)
-        self.smp = samplers.Uniform(1, 2)
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.n = 10
+        cls.smp = samplers.Uniform(1, 2)
 
     def test_get(self):
-        x = self.smp.get(n)
+        x = self.smp.get(self.n)
         self.assertGreaterEqual(np.min(x), 1)
         self.assertLessEqual(np.max(x), 2)
 
     def test_copy_other_bounds(self):
-        x = self.smp.copy_other_bounds(1, 10).get(n)
+        x = self.smp.copy_other_bounds(1, 10).get(self.n)
         self.assertGreaterEqual(np.min(x), 1)
         self.assertLessEqual(np.max(x), 10)
 
@@ -43,17 +43,18 @@ class TestUniform(unittest.TestCase):
 
 
 class TestLogUniform(unittest.TestCase):
-    def __init__(self, *args):
-        super().__init__(*args)
-        self.smp = samplers.LogUniform(1, 2)
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.n = 10
+        cls.smp = samplers.LogUniform(1, 2)
 
     def test_get(self):
-        x = self.smp.get(n)
+        x = self.smp.get(self.n)
         self.assertGreaterEqual(np.min(x), 1)
         self.assertLessEqual(np.max(x), 2)
 
     def test_copy_other_bounds(self):
-        x = self.smp.copy_other_bounds(1, 10).get(n)
+        x = self.smp.copy_other_bounds(1, 10).get(self.n)
         self.assertGreaterEqual(np.min(x), 1)
         self.assertLessEqual(np.max(x), 10)
 
@@ -62,24 +63,21 @@ class TestLogUniform(unittest.TestCase):
 
 
 class TestBoundedPowerLaw(unittest.TestCase):
-    def __init__(self, *args):
-        super().__init__(*args)
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.n = 10
         alpha = 2
-        self.smp = samplers.BoundedPowerLaw(alpha, 1, 2)
+        cls.smp = samplers.BoundedPowerLaw(alpha, 1, 2)
 
     def test_get(self):
-        x = self.smp.get(n)
+        x = self.smp.get(self.n)
         self.assertGreaterEqual(np.min(x), 1)
         self.assertLessEqual(np.max(x), 2)
 
     def test_copy_other_bounds(self):
-        x = self.smp.copy_other_bounds(1, 10).get(n)
+        x = self.smp.copy_other_bounds(1, 10).get(self.n)
         self.assertGreaterEqual(np.min(x), 1)
         self.assertLessEqual(np.max(x), 10)
 
     def test_str(self):
         self.assertIsInstance(str(self.smp), str)
-
-
-if __name__ == "__main__":
-    unittest.main()

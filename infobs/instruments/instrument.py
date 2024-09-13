@@ -1,12 +1,13 @@
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
 
 from .. import util
-from ..graphics._ism_lines_helpers import filter_molecules, molecules_among_lines
 from ..model import MeudonPDR
+from ..util import kelvin_to_erg
+from ..util.ism_lines_helpers import filter_molecules, molecules_among_lines
 
 __all__ = ["Instrument", "StandardInstrument", "IdealInstrument", "MergedInstrument"]
 
@@ -66,7 +67,11 @@ class Instrument(ABC):
     def available_molecules(self) -> List[str]:
         return molecules_among_lines(self.lines)
 
-    def available_lines(self, molecules: Union[str, List[str]] = []) -> List[str]:
+    def available_lines(
+        self, molecules: Optional[Union[str, List[str]]] = None
+    ) -> List[str]:
+        if molecules is None:
+            return self.lines.copy()
         return filter_molecules(self.lines, molecules)
 
     @abstractmethod
@@ -112,17 +117,36 @@ class StandardInstrument(Instrument, ABC):
         """Calibration error [%] for each line"""
         pass
 
+    def get_rms(
+        self, obstime: float, lines: Optional[List[str]] = None
+    ) -> Dict[str, float]:
+        if isinstance(lines, str):
+            lines = [lines]
+        lines = lines or self.lines
+
+        rms = np.array([self.rms[line] for line in lines])
+        ref_obstime = np.array([self.ref_obstime[line] for line in lines])
+
+        rms = rms / (obstime / ref_obstime) ** 0.5
+        rms = util.integrate_noise(rms, self.linewidth / self.dv, self.dv)
+
+        # Unit conversion
+        freqs = 1e9 * np.array([self.freqs[l] for l in lines])
+        if not self.kelvin:
+            rms = kelvin_to_erg(rms, freqs)
+
+        return {l: v for l, v in zip(lines, rms.tolist())}
+
     def measure(self, df: pd.DataFrame, obstime: float) -> pd.DataFrame:
         df_params, df_lines = self._split_dataframe(df)
 
-        rms = np.array([self.rms[line] for line in df_lines.columns])
-        ref_obstime = np.array([self.ref_obstime[line] for line in df_lines.columns])
+        rms_dict = self.get_rms(obstime)
         percent = np.array([self.percent[line] for line in df_lines.columns])
 
-        sigma_a = rms / (obstime / ref_obstime) ** 0.5  # Atmospheric noise
+        sigma_a = np.array(
+            [rms_dict[l] for l in df_lines.columns.to_list()]
+        )  # Atmospheric noise
         sigma_m = np.log(1 + percent / 100)  # Calibration error
-
-        sigma_a = util.integrate_noise(sigma_a, self.linewidth / self.dv, self.dv)
 
         eps_a = np.random.normal(loc=0.0, scale=sigma_a, size=df_lines.shape)
         eps_m = np.random.lognormal(
@@ -134,6 +158,9 @@ class StandardInstrument(Instrument, ABC):
         df_lines_noise = pd.DataFrame(y, columns=df_lines.columns)
         return pd.concat([df_params, df_lines_noise], axis=1)
 
+    def __str__(self):
+        return "User-defined instrument"
+
 
 class IdealInstrument(Instrument):
     """Ideal instrument without atmospheric noise and calibration error."""
@@ -141,9 +168,9 @@ class IdealInstrument(Instrument):
     def __init__(self, kelvin: bool = True):
         super().__init__(MeudonPDR.all_lines(), kelvin)
 
-    def measure(self, df: pd.DataFrame, _: float) -> pd.DataFrame:
+    def measure(self, df: pd.DataFrame, _: Optional[float] = None) -> pd.DataFrame:
         self._split_dataframe(df)  # Only to check lines validity
-        return df
+        return df.copy()
 
     def __str__(self):
         return "Ideal instrument"
@@ -152,8 +179,12 @@ class IdealInstrument(Instrument):
 class MergedInstrument(Instrument):
     """combinations of multiple instruments"""
 
-    def __init__(self, instruments: List[Instrument], kelvin: bool = True):
+    def __init__(self, instruments: List[Instrument]):
+        assert len(instruments) != 0
         self.instruments = instruments
+
+        kelvin = instruments[0].kelvin
+        assert all([instru.kelvin == kelvin for instru in instruments])
 
         lines = []
         for instru in instruments:

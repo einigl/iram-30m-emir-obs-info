@@ -1,9 +1,9 @@
 import os
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+from adjustText import adjust_text
 from matplotlib.ticker import MultipleLocator
 
 from ...graphics import Settings, latex_line
@@ -28,15 +28,61 @@ def _load_noise_profile(obstime: float, ipwv: int):
     return f_array, n_array
 
 
-def plot_all_bands(freqs: np.ndarray, obstime: Optional[float], ipwv: int):
-    rms_min = 0  # mK
-    rms_max = 800  # mK
-    if obstime is not None:
-        rms_max /= (obstime / 60) ** 2
+def _avoid_overlapping(
+    freqs: List[float], min_gap: Optional[float], lims: Tuple[float, float]
+):
+    x = [(f - lims[0]) / (lims[1] - lims[0]) for f in freqs]
+
+    if min_gap is None:
+        return x
+
+    min_gap /= 100
+
+    count = 0
+    while True:
+        offsets = len(x) * [0.0]
+        for i in range(len(x) - 1):
+            gap = x[i + 1] - x[i]
+            diff = min_gap - gap
+            if diff > 1e-5:  # To avoid staying in loop because of numerical errors
+                offsets[i] -= diff / 2
+                offsets[i + 1] += diff / 2
+        x = [f + o for f, o in zip(x, offsets)]
+        if max(offsets) == 0:
+            break
+        count += 1
+        if count > 100:
+            break
+
+    return x
+
+
+def plot_all_bands(
+    lines: List[str],
+    freqs: Dict[str, float],
+    obstime: Optional[float],
+    ipwv: Literal[0, 1, 2],
+    rms_min: Optional[float] = None,
+    rms_max: Optional[float] = None,
+    fontsize=12,
+    legend_fontsize=12,
+):
+    """
+    ipwv [mm]
+    rms_min [K]
+    rms_max [K]
+    """
+    if rms_max is None:
+        rms_max = 1.0 if obstime is None else 0.5 / (obstime / 60) ** 0.5
+    if rms_min is None:
+        rms_min = 0.0 if obstime is None else 0.05 / (obstime / 60) ** 0.5
+
+    rms_min *= 1e3
+    rms_max *= 1e3
     rms_delta = rms_max - rms_min
 
-    for f in freqs:
-        plt.axvline(f, 0.05, 0.95, linewidth=0.8)
+    for l in lines:
+        plt.axvline(freqs[l], 0.05, 0.95, linewidth=0.8)
 
     bands = iram30m_emir.IRAM30mEMIR.bands()
 
@@ -54,105 +100,121 @@ def plot_all_bands(freqs: np.ndarray, obstime: Optional[float], ipwv: int):
             color="red",
             weight="bold",
             bbox=props,
+            fontsize=legend_fontsize,
         )
 
-    f_array, n_array = _load_noise_profile(obstime or 60, ipwv)
+    f_array, n_array = _load_noise_profile(obstime or 60.0, ipwv)
     mask = (lowest <= f_array) & (f_array <= highest)
 
     if obstime is not None:
         plt.plot(f_array[mask], 1e3 * n_array[mask], color="tab:gray")
-        plt.ylabel("Noise RMS (mK)", labelpad=10)
+        plt.ylabel("Noise RMS (mK)", labelpad=10, fontsize=fontsize)
 
-    plt.xlabel("$f$ (GHz)")
+    plt.xlabel("$f$ (GHz)", fontsize=fontsize)
     plt.ylim([rms_min, rms_max])
     if obstime is None:
         plt.yticks([])
+    plt.tick_params(labelsize=fontsize)
     plt.gca().xaxis.set_minor_locator(MultipleLocator(5))
 
 
 def plot_specific_band(
     band: Literal["3mm", "2mm", "1mm", "0.9mm"],
-    freqs: np.ndarray,
     lines: List[str],
+    freqs: Dict[str, float],
     obstime: Optional[float],
-    ipwv: int,
-    short: bool,
+    ipwv: Literal[0, 1, 2],
+    transitions: bool,
+    rotation: int,
+    rms_min: Optional[float] = None,
+    rms_max: Optional[float] = None,
+    min_gap: Optional[float] = None,
+    global_offset: Optional[float] = None,
+    fontsize: int = 12,
+    lines_fontsize: int = 10,
+    legend_fontsize: int = 12,
 ):
-
-    min_space = 0.022  # [0, 1]
-    global_offset_pos = -0.01
-
-    percentile = 90
+    """
+    ipwv [mm]
+    rms_min [K]
+    rms_max [K]
+    labels_gap [%]
+    global_offset [%]
+    """
+    assert isinstance(band, str)
+    band = band.lower().replace(" ", "")
+    assert band in ["3mm", "2mm", "1mm", "0.9mm"]
 
     low, upp = iram30m_emir.IRAM30mEMIR.bands()[band]
 
     f_array, n_array = _load_noise_profile(obstime or 60, ipwv)
     mask = (low <= f_array) & (f_array <= upp)
 
-    rms_min = 1e3 * np.min(n_array[mask])  # mK
-    rms_max = min(1e3 * np.percentile(n_array[mask], percentile), 900)  # mK
-    rms_min = max(rms_min - 0.1 * (rms_max - rms_min), 0)
+    perc_d = {
+        "3mm": 90,
+        "2mm": 85,
+        "1mm": 90,
+        "0.9mm": 70,
+    }
+
+    if rms_max is None:
+        rms_max = 1e3 * np.percentile(n_array[mask], perc_d[band])  # mK
+    if rms_min is None:
+        rms_min = 1e3 * np.min(n_array[mask])  # mK
+        rms_min = max(rms_min - 0.1 * (rms_max - rms_min), 0)
     rms_delta = rms_max - rms_min
 
     plt.plot(
-        [low, upp], 2 * [rms_min + 0.9 * rms_delta], color="red", label=f"{band} band"
+        [low, upp],
+        2 * [rms_min + 0.9 * rms_delta],
+        color="red",
+        label=f"{band.replace('mm', '$~$mm')} band",
     )
 
     if obstime is not None:
         plt.plot(f_array[mask], 1e3 * n_array[mask], color="tab:gray")
-        plt.ylabel("Noise RMS (mK)", labelpad=10)
+        plt.ylabel("Noise RMS (mK)", labelpad=10, fontsize=fontsize)
 
-    _lines = []
     _freqs = []
-    for line, f in zip(lines, freqs):
+    for line in lines:
+        f = freqs[line]
         if not low <= f <= upp:
             continue
         plt.axvline(f, 0.05, 0.95, linewidth=0.8)
-        _lines.append(line)
         _freqs.append(f)
 
-    xlim = plt.gca().get_xlim()
-    factor = xlim[1] - xlim[0]
-    min_df = min_space * factor
+    order = np.argsort(_freqs)
+    lines = [lines[i] for i in order]
+    _freqs = [_freqs[i] for i in order]
 
-    _positions = []
-    group_f, group_p = [], []
+    xs = _avoid_overlapping(_freqs, min_gap=min_gap, lims=plt.gca().get_xlim())
+    if global_offset is not None:
+        xs = [x + global_offset / 100 for x in xs]
 
-    i = 0
-    while i < len(_freqs):
-        f = _freqs[i]
-        if len(group_f) == 0:
-            group_f.append(f)
-            group_p.append(f)
-            i += 1
-        elif f - group_f[-1] < min_df:
-            group_f.append(f)
-            group_p.append(group_p[-1] + min_df)
-            i += 1
-        else:
-            group_offset = np.mean(group_p) - np.mean(group_f)
-            _positions.extend([p - group_offset for p in group_p])
-            group_f, group_p = [], []
-            # No increment
-
-    group_offset = np.mean(group_p) - np.mean(group_f)
-    _positions.extend([p - group_offset for p in group_p])
-
-    for line, f, pos in zip(_lines, _freqs, _positions):
-        plt.annotate(
-            "$" + latex_line(line, short=short) + "$",
-            xy=(pos + factor * global_offset_pos, rms_max + 0.02 * rms_delta),
-            rotation=60,
-            ha="left",
+    for line, x in zip(lines, xs):
+        t = plt.annotate(
+            "$" + latex_line(line, transition=transitions) + "$",
+            xy=(x, 1.025),
+            xycoords="axes fraction",
+            rotation=rotation,
+            ha="center"
+            if abs(rotation) == 90
+            else "left"
+            if rotation >= 0
+            else "right",
             va="bottom",
             annotation_clip=False,
-            fontsize=7,
+            fontsize=lines_fontsize,
         )
 
-    plt.xlabel("$f$ (GHz)")
+    plt.xlabel("$f$ (GHz)", fontsize=fontsize)
     plt.ylim([rms_min, rms_max])
     if obstime is None:
         plt.yticks([])
+    else:
+        plt.tick_params(labelsize=fontsize)
 
     plt.gca().xaxis.set_minor_locator(MultipleLocator(5))
-    plt.legend(loc="lower left", handlelength=1, borderpad=0.5, fontsize=9)
+    plt.legend(
+        loc="lower left", handlelength=1, borderpad=0.5, fontsize=legend_fontsize
+    )
