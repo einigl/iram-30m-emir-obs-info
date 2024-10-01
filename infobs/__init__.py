@@ -1,3 +1,5 @@
+__version__ = "1.0.0"
+
 from .informativity import *
 from .instruments import *
 from .model import *

@@ -29,43 +29,10 @@ class InfoPlotter:
         c = to_rgba("tab:orange")
         self.alt_color = (c[0], c[1], c[2], 0.6)
 
-    # Probability plots
 
-    def plot_prob_bar(
-        self, lines: List[str], probs: List[float], transitions: bool = True
-    ) -> Figure:
-        ###
-        dpi = 200
-        width = 0.6
-        xscale = 1.2
-        yscale = 1.0
-        capsize = 6
-        ###
+    # Discrete plots
 
-        # fig, ax = plt.subplots(1, 1, figsize = (xscale*6.4, yscale*4.8), dpi=dpi)
-        ax = plt.gca()
-
-        ax.bar(np.arange(len(probs)), probs, width=width, color="tab:blue")
-
-        ax.set_xticks(np.arange(len(probs)))
-        ax.set_xticklabels(
-            [
-                "$" + self.lines_comb_formatter(l, transition=transitions) + "$"
-                for l in lines
-            ],
-            rotation=45,
-            fontsize=12,
-            ha="right",
-        )
-
-        ax.set_xlabel("Integrated molecular lines", labelpad=20)
-        ax.set_ylabel("Mutual information (bits)", labelpad=20)
-
-        return None  # fig TODO
-
-    # MI plots (discrete)
-
-    def plot_mi_bar(
+    def bar(
         self,
         lines: List[str],
         mis: List[float],
@@ -159,7 +126,7 @@ class InfoPlotter:
 
         return ax
 
-    def plot_mi_matrix(
+    def matrix(
         self,
         lines: List[str],
         mis: List[List[float]],
@@ -202,9 +169,7 @@ class InfoPlotter:
 
         return fig
 
-    # MI bar plots comparison
-
-    def plot_mi_bar_comparison(
+    def bar_comparison(
         self,
         lines: List[str],
         mis: Dict[str, List[float]],
@@ -362,117 +327,7 @@ class InfoPlotter:
 
         return ax
 
-    # MI plots (continuous)
-
-    def plot_mi_profile(self):
-        raise NotImplementedError("TODO")
-
-    def plot_mi_profile_comparison(self):
-        raise NotImplementedError("TODO")
-
-    def plot_mi_profiles_summary(self):
-        raise NotImplementedError("TODO")
-
-    def plot_mi_map(
-        self,
-        xticks: np.ndarray,
-        yticks: np.ndarray,
-        mat: np.ndarray,
-        vmax: Optional[float] = None,
-        cmap: str = "jet",
-        paramx: Optional[str] = None,
-        paramy: Optional[str] = None,
-    ):
-        ax = plt.gca()
-
-        X, Y = np.meshgrid(xticks, yticks)
-
-        im = ax.pcolor(X, Y, mat, cmap=cmap, vmin=0, vmax=vmax)
-
-        cbar = plt.colorbar(im, ax=ax)  # fig.colorbar(...)
-        cbar.set_label("Amount of information (bits)", labelpad=10)
-
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-
-        ax.set_xlabel(f"${self.param_formatter(paramx)}$")
-        ax.set_ylabel(f"${self.param_formatter(paramy)}$")
-
-        return ax
-
-    def plot_mi_map_comparison(
-        self,
-        xticks: np.ndarray,
-        yticks: np.ndarray,
-        mat1: np.ndarray,
-        mat2: np.ndarray,
-        diff: bool,
-        title1: str,
-        title2: str,
-        titlediff: Optional[str] = None,
-        vmax: Optional[float] = None,
-        cmap: str = "jet",
-        cmapdiff: str = "magma",
-        params: Optional[List[str]] = None,
-        lines: Optional[List[str]] = None,
-        paramx: Optional[str] = None,
-        paramy: Optional[str] = None,
-    ):
-        if diff:
-            fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(3 * 6.4, 4.8), dpi=125)
-            matdiff = mat1 - mat2
-        else:
-            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(2 * 6.4, 4.8), dpi=125)
-
-        X, Y = np.meshgrid(xticks, yticks)
-
-        ax1.pcolor(X, Y, mat1, cmap=cmap, vmin=0, vmax=vmax)
-        im = ax2.pcolor(X, Y, mat2, cmap=cmap, vmin=0, vmax=vmax)
-
-        cbar = fig.colorbar(im, ax=[ax1, ax2])
-        cbar.set_label("Amount of information (bits)", labelpad=10)
-
-        if diff:
-            im = ax3.pcolor(X, Y, matdiff, cmap=cmapdiff, vmin=0)
-
-            cbar = fig.colorbar(im, ax=[ax3])
-            cbar.set_label("Amount of information (bits)", labelpad=10)
-
-        ax1.set_xscale("log")
-        ax1.set_yscale("log")
-        ax2.set_xscale("log")
-        ax2.set_yscale("log")
-        if diff:
-            ax3.set_xscale("log")
-            ax3.set_yscale("log")
-
-        ax1.set_xlabel(f"${self.param_formatter(paramx)}$")
-        ax1.set_ylabel(f"${self.param_formatter(paramy)}$")
-        ax2.set_xlabel(f"${self.param_formatter(paramx)}$")
-        ax2.set_yticks([])
-        if diff:
-            ax3.set_xlabel(f"${self.param_formatter(paramx)}$")
-            ax3.set_yticks([])
-
-        ax1.set_title(title1)
-        ax2.set_title(title2)
-        if diff:
-            ax3.set_title(titlediff)
-
-        if lines is not None:
-            title = f"Informativity on ${self.params_comb_formatter(params)}$ of ${self.lines_comb_formatter(lines)}$"
-        fig.suptitle(title, fontsize=18, x=0.5, y=1.0)
-
-        if diff:
-            return fig, (ax1, ax2, ax3)
-        return fig, (ax1, ax2)
-
-    def plot_mi_maps_summary(self):
-        raise NotImplementedError("TODO")
-
-    # Summaries
-
-    def plot_summary_1d(
+    def summary_1d(
         self,
         parameters: Tuple[str, ...],
         regimes: Dict[str, Dict[str, Tuple]],
@@ -571,7 +426,7 @@ class InfoPlotter:
 
         return fig
 
-    def plot_summary_2d(
+    def summary_2d(
         self,
         parameters: Tuple[str, ...],
         regimes: Dict[str, Dict[str, Tuple]],
@@ -666,6 +521,46 @@ class InfoPlotter:
         ax.set_ylim([1, len(y)])
 
         return fig
+
+
+    # Continuous plots
+
+    def profile(self):
+        raise NotImplementedError("TODO")
+
+    def profiles_summary(self):
+        raise NotImplementedError("TODO")
+
+    def map(
+        self,
+        xticks: np.ndarray,
+        yticks: np.ndarray,
+        mat: np.ndarray,
+        vmax: Optional[float] = None,
+        cmap: str = "jet",
+        paramx: Optional[str] = None,
+        paramy: Optional[str] = None,
+    ):
+        ax = plt.gca()
+
+        X, Y = np.meshgrid(xticks, yticks)
+
+        im = ax.pcolor(X, Y, mat, cmap=cmap, vmin=0, vmax=vmax)
+
+        cbar = plt.colorbar(im, ax=ax)  # fig.colorbar(...)
+        cbar.set_label("Amount of information (bits)", labelpad=10)
+
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+
+        ax.set_xlabel(f"${self.param_formatter(paramx)}$")
+        ax.set_ylabel(f"${self.param_formatter(paramy)}$")
+
+        return ax
+
+    def maps_summary(self):
+        raise NotImplementedError("TODO")
+
 
     # Helpers
 
